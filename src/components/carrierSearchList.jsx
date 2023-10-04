@@ -21,7 +21,7 @@ class CarrierSearchList extends Component {
         },
         searchResolved: true, // This is a flag to indicate if the search has been resolved or not
         searchClickedIndex: null, // This is the index of the search that was clicked
-        entryClick: false, // This is a flag to indicate if a search entry was clicked
+        entryClick: false, // This is a flag to indicate if a search entry was clicked,
     } 
     
     componentDidMount() {
@@ -39,12 +39,12 @@ class CarrierSearchList extends Component {
 
           axios.get('/newSearch') // Make a GET request to the server route
             .then((response) => {
-                console.log(response.data);
                 const formattedSearches = response.data.map((search) => ({
                     ...search,
                     dateRange: search.dateRange.split('T')[0], // Extract date part only
                     searchClicked: true, // Initialize searchClicked to false for each search
                   }));
+  
                 this.setState({
                     searches: formattedSearches, // Update the searches state with the fetched data
                 });
@@ -68,6 +68,8 @@ class CarrierSearchList extends Component {
             destinationDH: '100',
             age: '2',
             searchClicked: false, // Initialize searchClicked to false for the new search
+            editing: false,
+
         };
         this.setState({
             searches: [...this.state.searches, newSearchData],
@@ -84,60 +86,108 @@ class CarrierSearchList extends Component {
         });
       }
       
-    onSubmit = async (e, index) => {
+    onSubmit = async (e, index, updateTag, id) => {
         e.preventDefault();
+            if (index >= 0 && index < this.state.searches.length) {
+                const newSearchData = this.state.searches[index];
+                              // Check if equipment is selected
+                              if (newSearchData.equipment === '' || newSearchData.equipment === 'select') {
+                                  alert('Please select equipment type');
+                                  return;
+                              }
+                 newSearchData.searchClicked = true; // Set searchClicked to true
+                try {
+                  // Make a POST request to your server using Axios
+                  const response = await axios.post('/newSearch', newSearchData);
+            
+                  if (response.status === 201) {
+                    // Handle success, e.g., show a success message or reset the form              
+                    this.setState({
+                      searchResolved: true, // Set searchResolved to true
+                      searchClickedIndex: index, // Set the clicked index
+                    });
+                    this.onEntryClick(e, index);
+                  } else {
+                    // Handle error, e.g., show an error message
+                    console.error('Error adding NewSearch:', response.statusText);
+                  }
+                } catch (error) {
+                  console.error('Error:', error);
+                }
+              } 
+        }
       
-        if (index >= 0 && index < this.state.searches.length) {
-          const newSearchData = this.state.searches[index];
-          console.log('Form data: ', newSearchData);  
-
-                        // Check if equipment is selected
-                        if (newSearchData.equipment === '' || newSearchData.equipment === 'select') {
-                            alert('Please select equipment type');
-                            return;
-                        }
-           newSearchData.searchClicked = true; // Set searchClicked to true
-          try {
-            // Make a POST request to your server using Axios
-            const response = await axios.post('/newSearch', newSearchData);
+       
       
-            if (response.status === 201) {
-              // Handle success, e.g., show a success message or reset the form              
-              this.setState({
-                searchResolved: true, // Set searchResolved to true
-                searchClickedIndex: index, // Set the clicked index
+    onDelete = async (e, index, id) => {
+        e.preventDefault(); 
+        try {
+            // Make a DELETE request to the server with the item's 'id'
+            const response = await axios.delete(`/newSearch/${id}`);
+            const updatedSearches = this.state.searches.filter((search) => search._id !== id); // Filter out the item being deleted
+            this.setState({
+                searches: updatedSearches,
+                searchResolved: true, // Set searchResolved to true if needed
+                searchClickedIndex: -1, // Reset the clicked index
               });
-              this.onEntryClick(e, index);
+          
+
+            if (response.status === 200) {
+              // Handle the successful deletion (e.g., show a success message)
+              console.log('Search entry deleted successfully');
+              // You might want to refresh your search list or update the UI accordingly
             } else {
-              // Handle error, e.g., show an error message
-              console.error('Error adding NewSearch:', response.statusText);
+              // Handle delete errors
+              console.error('Error deleting search entry:', response.statusText);
             }
           } catch (error) {
+            // Handle unexpected errors (e.g., network issues)
             console.error('Error:', error);
-          }
-        } else {
-          console.error('Invalid index: ', index);
+          }    
         }
-      };
-      
-    onDelete = (e, index) => {
-        e.preventDefault(); 
-       console.log('Delete button clicked for index: ', index);
-    }
 
     onEdit = (e, index) => {
-        console.log('Edit button clicked for index: ', index);
-    }
-  
-    onEntryClick = (e, index) => {
-        console.log('Search entry clicked for index: ', index);
-        // You can perform additional actions when a search entry is clicked
-        // this.setState({
-        //     searchClickedIndex: index, // Set the clicked index
-        //     entryClick: true, // Set entryClick to true
-        // });
+        const updatedSearches = [...this.state.searches];
+        updatedSearches[index].searchClicked = false; // Set searchClicked to false
+        this.setState({ searches: updatedSearches });
+        updatedSearches[index].editing = true;
+        // this.onEditSave(e, index, updatedSearches[index]._id );
 
-    };
+        
+     }
+    
+    onEditSave = async (e, index, id, status) => {
+        try{
+            const searchData = this.state.searches[index];
+            // Format the dateRange to "yyyy-MM-dd" format
+            // Make a PUT request to the server with the updated data        
+            const response = await axios.put(`/newSearch/${id}`, searchData);
+            if (response.status === 200) {
+                // Handle the successful update (e.g., display a success message)
+                console.log('Search entry updated successfully');
+                const updatedSearches = [...this.state.searches];
+                updatedSearches[index] = response.data; //  Update the item in the array with the updated data
+                console.log(updatedSearches);
+                console.log(this.state.searches);
+                this.setState({
+                    searches: this.state.searches, // Update the searches state with the updated data
+                    searchResolved: true, // Set searchResolved to true
+                    searchClickedIndex: index, // Set the clicked index
+                });
+                searchData.editing = false;
+                searchData.searchClicked = true;
+                                
+              } else {
+                // Handle update errors
+                console.error('Error updating search entry:', response.statusText);
+              }
+            }  catch (error) {
+          // Handle unexpected errors (e.g., network issues)
+          console.error('Error updating search entry:', error);
+        }
+    }
+
+    onEntryClick = (e, index) => {} // This is a placeholder for now
         
     render() { 
 
@@ -162,7 +212,7 @@ class CarrierSearchList extends Component {
                                     <form onSubmit={(e) => this.onSubmit(e, index)}>
                                         <select
                                             name='equipment'
-                                            disabled={this.state.searchClicked}
+                                            disabled={search.searchClicked}
                                             onChange={e => this.onChange(e, index)}
                                             value={search.equipment}
                                             >
@@ -173,12 +223,12 @@ class CarrierSearchList extends Component {
                                             <option value='reefer'>Reefer</option>
                                         </select>
 
-                                        <input type='date' name='dateRange' value={search.dateRange} onChange={e => this.onChange(e, index)} disabled={this.state.searchClicked} />
-                                        <input type='text' name='origin' value={search.origin} onChange={e => this.onChange(e, index)} disabled={this.state.searchClicked} />
-                                        <input type='number' name='originDH' value={search.originDH} onChange={e => this.onChange(e, index)} disabled={this.state.searchClicked} />
-                                        <input type='text' name='destination' value={search.destination} onChange={e => this.onChange(e, index)} disabled={this.state.searchClicked} />
-                                        <input type='number' name='destinationDH' value={search.destinationDH} onChange={e => this.onChange(e, index)} disabled={this.state.searchClicked} />
-                                        <select name="age" value={search.age} onChange={e => this.onChange(e, index)} disabled={this.state.searchClicked}>
+                                        <input type='date' name='dateRange' value={search.dateRange} onChange={e => this.onChange(e, index)} disabled={search.searchClicked} />
+                                        <input type='text' name='origin' value={search.origin} onChange={e => this.onChange(e, index)} disabled={search.searchClicked} />
+                                        <input type='number' name='originDH' value={search.originDH} onChange={e => this.onChange(e, index)} disabled={search.searchClicked} />
+                                        <input type='text' name='destination' value={search.destination} onChange={e => this.onChange(e, index)} disabled={search.searchClicked} />
+                                        <input type='number' name='destinationDH' value={search.destinationDH} onChange={e => this.onChange(e, index)} disabled={search.searchClicked} />
+                                        <select name="age" value={search.age} onChange={e => this.onChange(e, index)} disabled={search.searchClicked}>
                                             <option value='select'>2</option>
                                             <option value='flatBed'>4</option>
                                             <option value='van'>6</option>
@@ -187,7 +237,7 @@ class CarrierSearchList extends Component {
                                     </form>
                                 </div>
                                 <div className="btn-group" role="group" aria-label="Basic example">
-                                {!search.searchClicked ? (
+                                {!search.searchClicked && !search.editing ? (
                                     <button
                                         type='submit'
                                         className="btn btn-primary"
@@ -208,10 +258,19 @@ class CarrierSearchList extends Component {
                                 {search.searchClicked ? (
                                     <button
                                         type='button'
-                                        className="btn btn-primary"
-                                        onClick={e => this.onDelete(e, index)}
+                                        className="btn btn-danger"
+                                        onClick={e => this.onDelete(e, index, search._id)}
                                     >
                                         DELETE
+                                    </button>
+                                ) : null}
+                                {search.editing ? (
+                                    <button
+                                        type='button'
+                                        className="btn btn-primary"
+                                        onClick={e => this.onEditSave(e, index, search._id, search.searchClicked)}
+                                    >
+                                        SAVE
                                     </button>
                                 ) : null}
                             </div>
