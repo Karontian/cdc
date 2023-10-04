@@ -159,8 +159,10 @@ class CarrierSearchList extends Component {
     onEditSave = async (e, index, id, status) => {
         try{
             const searchData = this.state.searches[index];
-            // Format the dateRange to "yyyy-MM-dd" format
-            // Make a PUT request to the server with the updated data        
+                    if (searchData.equipment === 'select') {
+                        alert('Please select equipment type');
+                        return;
+                    }
             const response = await axios.put(`/newSearch/${id}`, searchData);
             if (response.status === 200) {
                 // Handle the successful update (e.g., display a success message)
@@ -229,10 +231,10 @@ class CarrierSearchList extends Component {
                                         <input type='text' name='destination' value={search.destination} onChange={e => this.onChange(e, index)} disabled={search.searchClicked} />
                                         <input type='number' name='destinationDH' value={search.destinationDH} onChange={e => this.onChange(e, index)} disabled={search.searchClicked} />
                                         <select name="age" value={search.age} onChange={e => this.onChange(e, index)} disabled={search.searchClicked}>
-                                            <option value='select'>2</option>
-                                            <option value='flatBed'>4</option>
-                                            <option value='van'>6</option>
-                                            <option value='reefer'>8+</option>
+                                            <option value='2'>2</option>
+                                            <option value='4'>4</option>
+                                            <option value='6'>6</option>
+                                            <option value='8'>8+</option>
                                         </select>
                                     </form>
                                 </div>
