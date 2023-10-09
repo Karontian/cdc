@@ -8,6 +8,7 @@ class CarrierSearchList extends Component {
     state = { 
         loads: [],
         searches: [],
+        isNewSearch: false, // Flag to track new search entries
         displayForm: false,
         formData: {
             equipment: '',
@@ -39,12 +40,12 @@ class CarrierSearchList extends Component {
 
           axios.get('/newSearch') // Make a GET request to the server route
             .then((response) => {
+                console.log(response.data);
                 const formattedSearches = response.data.map((search) => ({
                     ...search,
                     dateRange: search.dateRange.split('T')[0], // Extract date part only
                     searchClicked: true, // Initialize searchClicked to false for each search
                   }));
-  
                 this.setState({
                     searches: formattedSearches, // Update the searches state with the fetched data
                 });
@@ -69,9 +70,11 @@ class CarrierSearchList extends Component {
             age: '2',
             searchClicked: false, // Initialize searchClicked to false for the new search
             editing: false,
+            createdAt : Date.now()
 
         };
         this.setState({
+            isNewSearch: true, // Set isNewSearch to true
             searches: [...this.state.searches, newSearchData],
             searchResolved: false, // Set searchResolved to false
         });
@@ -87,10 +90,11 @@ class CarrierSearchList extends Component {
       }
       
     onSubmit = async (e, index, updateTag, id) => {
-        e.preventDefault();
+        e.preventDefault()
+        console.log('index', this.state.searches[index]);
             if (index >= 0 && index < this.state.searches.length) {
                 const newSearchData = this.state.searches[index];
-                              // Check if equipment is selected
+                                          // Check if equipment is selected
                               if (newSearchData.equipment === '' || newSearchData.equipment === 'select') {
                                   alert('Please select equipment type');
                                   return;
@@ -117,7 +121,7 @@ class CarrierSearchList extends Component {
               } 
         }
       
-       
+
       
     onDelete = async (e, index, id) => {
         e.preventDefault(); 
@@ -151,8 +155,6 @@ class CarrierSearchList extends Component {
         updatedSearches[index].searchClicked = false; // Set searchClicked to false
         this.setState({ searches: updatedSearches });
         updatedSearches[index].editing = true;
-        // this.onEditSave(e, index, updatedSearches[index]._id );
-
         
      }
     
@@ -163,26 +165,66 @@ class CarrierSearchList extends Component {
                         alert('Please select equipment type');
                         return;
                     }
-            const response = await axios.put(`/newSearch/${id}`, searchData);
-            if (response.status === 200) {
-                // Handle the successful update (e.g., display a success message)
-                console.log('Search entry updated successfully');
-                const updatedSearches = [...this.state.searches];
-                updatedSearches[index] = response.data; //  Update the item in the array with the updated data
-                console.log(updatedSearches);
-                console.log(this.state.searches);
-                this.setState({
-                    searches: this.state.searches, // Update the searches state with the updated data
-                    searchResolved: true, // Set searchResolved to true
-                    searchClickedIndex: index, // Set the clicked index
-                });
-                searchData.editing = false;
-                searchData.searchClicked = true;
-                                
-              } else {
-                // Handle update errors
-                console.error('Error updating search entry:', response.statusText);
-              }
+        
+            if(id){
+                console.log('id', id);
+                const response = await axios.put(`/newSearch/${id}`, searchData);
+                const formattedDate = response.data.dateRange.split('T')[0];
+
+                if (response.status === 200) {
+                    // Handle the successful update (e.g., display a success message)
+                    console.log('Search entry updated successfully');
+                    const createdSearch = { ...response.data, dateRange: formattedDate }; // Include the formatted date
+                    const updatedSearches = [...this.state.searches];
+                    updatedSearches[index] = createdSearch; //  Update the item in the array with the updated data
+                    updatedSearches[index].editing = false;
+                    updatedSearches[index].searchClicked = true;
+                    this.setState({
+                        searches: updatedSearches, // Update the searches state with the updated data
+                        searchResolved: true, // Set searchResolved to true
+                        searchClickedIndex: index, // Set the clicked index
+                    });
+                    // searchData.editing = false;
+                    // searchData.searchClicked = true;
+                                    
+                  } else {
+                    // Handle update errors
+                    console.error('Error updating search entry:', response.statusText);
+                  }
+
+            } else {
+                console.log('NOT ID', searchData, status);
+                console.log(searchData.createdAt)
+                let timeStamp = searchData.createdAt;
+                const idResponse = await axios.get(`/getNewSearchId/${timeStamp}`); // Make a GET request to the server route
+                console.log('idResponse', idResponse.data[0]._id);
+                let id = idResponse.data[0]._id;
+                const response = await axios.put(`/newSearch/${id}`, searchData);
+                const formattedDate = response.data.dateRange.split('T')[0];
+                if (response.status === 200) {
+                    // Handle the successful update (e.g., display a success message)
+                    console.log('Search entry updated successfully');
+                    const createdSearch = { ...response.data, dateRange: formattedDate }; // Include the formatted date
+                    const updatedSearches = [...this.state.searches];
+                    updatedSearches[index] = createdSearch; //  Update the item in the array with the updated data
+                    updatedSearches[index].editing = false;
+                    updatedSearches[index].searchClicked = true;
+                    this.setState({
+                        searches: updatedSearches, // Update the searches state with the updated data
+                        searchResolved: true, // Set searchResolved to true
+                        searchClickedIndex: index, // Set the clicked index
+                    });
+                    // searchData.editing = false;
+                    // searchData.searchClicked = true;
+                                    
+                  } else {
+                    // Handle update errors
+                    console.error('Error updating search entry:', response.statusText);
+                  }
+
+
+             }        
+            
             }  catch (error) {
           // Handle unexpected errors (e.g., network issues)
           console.error('Error updating search entry:', error);
@@ -243,7 +285,7 @@ class CarrierSearchList extends Component {
                                     <button
                                         type='submit'
                                         className="btn btn-primary"
-                                        onClick={e => this.onSubmit(e, index)}
+                                        onClick={e => this.onSubmit(e, index,  this.state.isNewSearch, search._id)}
                                     >
                                         SEARCH
                                     </button>
