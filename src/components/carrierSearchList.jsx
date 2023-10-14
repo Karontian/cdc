@@ -1,11 +1,18 @@
 import React, { Component } from 'react';
 import 'bootstrap/dist/css/bootstrap.min.css'
 import axios from 'axios'; // Import Axios
+import DatePicker from './utils/datePicker';
+import 'react-date-range/dist/styles.css'; // Import styles
+import 'react-date-range/dist/theme/default.css'; // Import theme styles
+
+
 
 axios.defaults.baseURL = 'http://localhost:3002'
 
 class CarrierSearchList extends Component {
     state = { 
+        placeholderText: new Date().toLocaleDateString(),
+        filteredLoads: [], // Initialize an empty array to store filtered loads
         loads: [],
         searches: [],
         isNewSearch: false, // Flag to track new search entries
@@ -13,6 +20,8 @@ class CarrierSearchList extends Component {
         formData: {
             equipment: '',
             dateRange: {},
+            selectedDate: {},
+            endDate: {},    
             origin: '',
             originDH: '',
             destination: '',
@@ -26,24 +35,11 @@ class CarrierSearchList extends Component {
     } 
     
     componentDidMount() {
-        // Fetch data from the server when the component mounts
-        axios.get('/loads') // Make a GET request to the server route
-          .then((response) => {
-            // console.log(response.data);
-            this.setState({
-              loads: response.data, // Update the searches state with the fetched data
-            });
-          })
-          .catch((error) => {
-            console.error('Error fetching data:', error);
-          });
-
           axios.get('/newSearch') // Make a GET request to the server route
             .then((response) => {
-                console.log(response.data);
                 const formattedSearches = response.data.map((search) => ({
                     ...search,
-                    dateRange: search.dateRange.split('T')[0], // Extract date part only
+                    // dateRange: search.dateRange.split('T')[0], // Extract date part only
                     searchClicked: true, // Initialize searchClicked to false for each search
                   }));
                 this.setState({
@@ -56,13 +52,10 @@ class CarrierSearchList extends Component {
       }
 
      newSearch = () => {//e is the event, index is the index of the search in the searches array
-        const date = new Date();
-        const localDate = new Date(date.getTime() - date.getTimezoneOffset() * 60000);
-        const dateStr = localDate.toISOString().substr(0, 10);
 
         const newSearchData = {
             equipment: '',
-            dateRange: dateStr,
+            dateRange: 'Select Date Range',
             origin: '',
             originDH: '100',
             destination: '',
@@ -91,8 +84,9 @@ class CarrierSearchList extends Component {
       
     onSubmit = async (e, index, updateTag, id) => {
         e.preventDefault()
-        console.log('index', this.state.searches[index]);
-            if (index >= 0 && index < this.state.searches.length) {
+        console.log('onSubmit', this.state.searches[index]);
+        
+        if (index >= 0 && index < this.state.searches.length) {
                 const newSearchData = this.state.searches[index];
                                           // Check if equipment is selected
                               if (newSearchData.equipment === '' || newSearchData.equipment === 'select') {
@@ -110,6 +104,7 @@ class CarrierSearchList extends Component {
                       searchResolved: true, // Set searchResolved to true
                       searchClickedIndex: index, // Set the clicked index
                     });
+                    this.fetchLoadsData();
                     this.onEntryClick(e, index);
                   } else {
                     // Handle error, e.g., show an error message
@@ -119,36 +114,40 @@ class CarrierSearchList extends Component {
                   console.error('Error:', error);
                 }
               } 
-        }
-      
-
+    }
       
     onDelete = async (e, index, id) => {
-        e.preventDefault(); 
-        try {
-            // Make a DELETE request to the server with the item's 'id'
-            const response = await axios.delete(`/newSearch/${id}`);
-            const updatedSearches = this.state.searches.filter((search) => search._id !== id); // Filter out the item being deleted
-            this.setState({
-                searches: updatedSearches,
-                searchResolved: true, // Set searchResolved to true if needed
-                searchClickedIndex: -1, // Reset the clicked index
-              });
+            e.preventDefault();
+            try {
+              if (id) {
+                // If there's an ID, make a DELETE request with it
+                const response = await axios.delete(`/newSearch/${id}`);
+                const updatedSearches = this.state.searches.filter((search) => search._id !== id);
+                this.setState({
+                  searches: updatedSearches,
+                  searchResolved: true,
+                  searchClickedIndex: -1,
+                });
           
-
-            if (response.status === 200) {
-              // Handle the successful deletion (e.g., show a success message)
-              console.log('Search entry deleted successfully');
-              // You might want to refresh your search list or update the UI accordingly
-            } else {
-              // Handle delete errors
-              console.error('Error deleting search entry:', response.statusText);
+                if (response.status === 200) {
+                  console.log('Search entry deleted successfully');
+                } else {
+                  console.error('Error deleting search entry:', response.statusText);
+                }
+              } else {
+                // If there's no ID, simply remove the item from the state
+                const updatedSearches = this.state.searches.slice(); // Create a shallow copy of the searches array
+                updatedSearches.splice(index, 1); // Remove the item at the specified index
+                this.setState({
+                  searches: updatedSearches,
+                  searchResolved: true,
+                  searchClickedIndex: -1,
+                });
+              }
+            } catch (error) {
+              console.error('Error:', error);
             }
-          } catch (error) {
-            // Handle unexpected errors (e.g., network issues)
-            console.error('Error:', error);
-          }    
-        }
+    };
 
     onEdit = (e, index) => {
         const updatedSearches = [...this.state.searches];
@@ -167,13 +166,11 @@ class CarrierSearchList extends Component {
                     }
         
             if(id){
-                console.log('id', id);
                 const response = await axios.put(`/newSearch/${id}`, searchData);
                 const formattedDate = response.data.dateRange.split('T')[0];
 
                 if (response.status === 200) {
                     // Handle the successful update (e.g., display a success message)
-                    console.log('Search entry updated successfully');
                     const createdSearch = { ...response.data, dateRange: formattedDate }; // Include the formatted date
                     const updatedSearches = [...this.state.searches];
                     updatedSearches[index] = createdSearch; //  Update the item in the array with the updated data
@@ -184,8 +181,7 @@ class CarrierSearchList extends Component {
                         searchResolved: true, // Set searchResolved to true
                         searchClickedIndex: index, // Set the clicked index
                     });
-                    // searchData.editing = false;
-                    // searchData.searchClicked = true;
+                    this.fetchLoadsData();
                                     
                   } else {
                     // Handle update errors
@@ -193,11 +189,8 @@ class CarrierSearchList extends Component {
                   }
 
             } else {
-                console.log('NOT ID', searchData, status);
-                console.log(searchData.createdAt)
                 let timeStamp = searchData.createdAt;
                 const idResponse = await axios.get(`/getNewSearchId/${timeStamp}`); // Make a GET request to the server route
-                console.log('idResponse', idResponse.data[0]._id);
                 let id = idResponse.data[0]._id;
                 const response = await axios.put(`/newSearch/${id}`, searchData);
                 const formattedDate = response.data.dateRange.split('T')[0];
@@ -214,9 +207,7 @@ class CarrierSearchList extends Component {
                         searchResolved: true, // Set searchResolved to true
                         searchClickedIndex: index, // Set the clicked index
                     });
-                    // searchData.editing = false;
-                    // searchData.searchClicked = true;
-                                    
+                    this.fetchLoadsData();                                  
                   } else {
                     // Handle update errors
                     console.error('Error updating search entry:', response.statusText);
@@ -232,7 +223,48 @@ class CarrierSearchList extends Component {
     }
 
     onEntryClick = (e, index) => {} // This is a placeholder for now
+
+    fetchLoadsData = async () => {
+        axios.get('/loads')
+        .then((response) => {
+          console.log(response.data);
+          this.setState({
+            loads: response.data,
+          });
+        })
+        .catch((error) => {
+          console.error('Error fetching data:', error);
+        });
+    }        
+
+    handleDateRangeChange = async (startDate, endDate, index) => {
+        console.log(this.state.searches[index]);
+        const startDateString = startDate ? startDate.toLocaleDateString() : '';
+        const endDateString = endDate ? endDate.toLocaleDateString() : '';
+      
+        let placeholderText = '';
+
+        if (startDate && endDate) {
+            const updatedSearches = [...this.state.searches];
+            updatedSearches[index].dateRange = `${startDateString}-${endDateString}`;
+            this.setState({ searches: updatedSearches });
         
+            placeholderText = `${startDateString} - ${endDateString}`;
+
+            // Rest of your code...
+        } else if (startDate) {
+            const updatedSearches = [...this.state.searches];
+            updatedSearches[index].dateRange = startDateString;
+            this.setState({ searches: updatedSearches });        
+            placeholderText = startDateString;
+
+        }
+          // Update the placeholderText state
+            this.setState({
+                placeholderText,
+            });
+    }
+
     render() { 
 
         return (
@@ -245,7 +277,6 @@ class CarrierSearchList extends Component {
                       disabled={!this.state.searchResolved}
                       >New Search</button>
                 </div>
-
 
                 <div id='searchList'>
                     {this.state.searches.map((search, index) => (
@@ -267,7 +298,15 @@ class CarrierSearchList extends Component {
                                             <option value='reefer'>Reefer</option>
                                         </select>
 
-                                        <input type='date' name='dateRange' value={search.dateRange} onChange={e => this.onChange(e, index)} disabled={search.searchClicked} />
+                                        <DatePicker 
+                                        disabled={search.searchClicked} 
+                                        onDateRangeChange={(startDate, endDate) => this.handleDateRangeChange(startDate, endDate, index)} 
+                                        placeholderText={this.state.placeholderText}
+                                        dateRange={search.dateRange}
+                                        />
+
+                                        {/* <input type='date' name='dateRange' value={search.dateRange} onChange={e => this.onChange(e, index)} disabled={search.searchClicked} /> */}
+
                                         <input type='text' name='origin' value={search.origin} onChange={e => this.onChange(e, index)} disabled={search.searchClicked} />
                                         <input type='number' name='originDH' value={search.originDH} onChange={e => this.onChange(e, index)} disabled={search.searchClicked} />
                                         <input type='text' name='destination' value={search.destination} onChange={e => this.onChange(e, index)} disabled={search.searchClicked} />
@@ -322,8 +361,6 @@ class CarrierSearchList extends Component {
                         </div>
                     ))}
                 </div>
-
-
 
                 <div id='resultList'>
                     <h1>Search Results</h1>
