@@ -5,12 +5,156 @@ import DatePicker from './utils/datePicker';
 import 'react-date-range/dist/styles.css'; // Import styles
 import 'react-date-range/dist/theme/default.css'; // Import theme styles
 
-
-
 axios.defaults.baseURL = 'http://localhost:3002'
 
 class CarrierSearchList extends Component {
     state = { 
+        sortConfig: {
+            key: '',
+            direction: 'ascending',
+        },
+        results: [
+            {
+                age: 2,
+                date: '10/10/2023',
+                equipment: 'FlatBed',
+                originDH: '100',
+                origin: 'Buenos Aires',
+                destinationDH: '200',
+                destination: 'Sao Paulo',
+                company: 'Transporte SA',
+                contact: '+54 11 1234 5678', // Argentina
+                length: '40 ft',
+                weight: '25,000 lbs',
+                rate: '500',
+            },
+            {
+                age: 4,
+                date: '10/12/2023',
+                equipment: 'Van',
+                originDH: '150',
+                origin: 'Lima',
+                destinationDH: '250',
+                destination: 'Bogota',
+                company: 'Cargo Express',
+                contact: '+51 987 654 321', // Peru
+                length: '30 ft',
+                weight: '20,000 lbs',
+                rate: '600',
+            },
+            {
+                age: 6,
+                date: '10/15/2023',
+                equipment: 'Reefer',
+                originDH: '100',
+                origin: 'Mexico City',
+                destinationDH: '300',
+                destination: 'Montevideo',
+                company: 'Logistics Inc.',
+                contact: '+52 55 1234 5678', // Mexico
+                length: '45 ft',
+                weight: '28,000 lbs',
+                rate: '700',
+            },
+            {
+                age: 2,
+                date: '10/17/2023',
+                equipment: 'FlatBed',
+                originDH: '200',
+                origin: 'Santiago',
+                destinationDH: '100',
+                destination: 'Rio de Janeiro',
+                company: 'TransCargo',
+                contact: '+56 2 9876 5432', // Chile
+                length: '40 ft',
+                weight: '24,000 lbs',
+                rate: '550',
+            },
+            {
+                age: 4,
+                date: '10/20/2023',
+                equipment: 'Van',
+                originDH: '100',
+                origin: 'Bogota',
+                destinationDH: '150',
+                destination: 'Lima',
+                company: 'Express Logistics',
+                contact: '+57 1 123 4567', // Colombia
+                length: '30 ft',
+                weight: '22,000 lbs',
+                rate: '580',
+            },
+            {
+                age: 6,
+                date: '10/22/2023',
+                equipment: 'Reefer',
+                originDH: '200',
+                origin: 'Rio de Janeiro',
+                destinationDH: '250',
+                destination: 'Sao Paulo',
+                company: 'CargoMasters',
+                contact: '+55 11 4321 8765', // Brazil
+                length: '45 ft',
+                weight: '26,000 lbs',
+                rate: '650',
+            },
+            {
+                age: 2,
+                date: '10/25/2023',
+                equipment: 'FlatBed',
+                originDH: '150',
+                origin: 'Sao Paulo',
+                destinationDH: '100',
+                destination: 'Buenos Aires',
+                company: 'Cargo Transport',
+                contact: '+54 11 8765 4321', // Argentina
+                length: '40 ft',
+                weight: '23,000 lbs',
+                rate: '560',
+            },
+            {
+                age: 4,
+                date: '10/27/2023',
+                equipment: 'Van',
+                originDH: '100',
+                origin: 'Montevideo',
+                destinationDH: '200',
+                destination: 'Mexico City',
+                company: 'FastCargo',
+                contact: '+598 2 1234 5678', // Uruguay
+                length: '30 ft',
+                weight: '21,000 lbs',
+                rate: '590',
+            },
+            {
+                age: 6,
+                date: '10/30/2023',
+                equipment: 'Reefer',
+                originDH: '200',
+                origin: 'Lima',
+                destinationDH: '250',
+                destination: 'Santiago',
+                company: 'Peru Transport',
+                contact: '+51 999 888 777', // Peru
+                length: '45 ft',
+                weight: '27,000 lbs',
+                rate: '630',
+            },
+            {
+                age: 2,
+                date: '11/1/2023',
+                equipment: 'FlatBed',
+                originDH: '100',
+                origin: 'Buenos Aires',
+                destinationDH: '200',
+                destination: 'Sao Paulo',
+                company: 'Transporte SA',
+                contact: '+54 11 1234 5678', // Argentina
+                length: '40 ft',
+                weight: '25,000 lbs',
+                rate: '500',
+            }
+        ], //Results to display coming from the DB to the searchResults table
         placeholderText: new Date().toLocaleDateString(),
         filteredLoads: [], // Initialize an empty array to store filtered loads
         loads: [],
@@ -32,8 +176,8 @@ class CarrierSearchList extends Component {
         searchResolved: true, // This is a flag to indicate if the search has been resolved or not
         searchClickedIndex: null, // This is the index of the search that was clicked
         entryClick: false, // This is a flag to indicate if a search entry was clicked,
+        
     } 
-    
     componentDidMount() {
           axios.get('/newSearch') // Make a GET request to the server route
             .then((response) => {
@@ -51,6 +195,8 @@ class CarrierSearchList extends Component {
             });
       }
 
+
+      //SEARCH LIST FUNCTIONS
      newSearch = () => {//e is the event, index is the index of the search in the searches array
 
         const newSearchData = {
@@ -265,6 +411,107 @@ class CarrierSearchList extends Component {
             });
     }
 
+    //SEARCH RESULTS FUNCTIONS
+
+    onHandleSorting = async (header) => {
+        try {
+            this.setState(
+                (prevState) => {
+                    let direction = 'ascending';
+                    if (prevState.sortConfig.key === header && prevState.sortConfig.direction === 'ascending') {
+                        direction = 'descending';
+                    }
+        
+                    // Return the updated state
+                    return { sortConfig: { key: header, direction } };
+                },
+                () => {
+                    console.log('Sort config after update:', this.state.sortConfig);
+                    const { results, sortConfig } = this.state;
+                    let sortedResults;
+                    if (sortConfig.key) {
+                        console.log('results', results)
+                        sortedResults = [...results].sort((a, b) => {
+                          if (sortConfig.direction === 'ascending') {
+                            // You can add logic for different headers
+                            switch (sortConfig.key) {
+                              case 'Age':
+                                return a.age - b.age;
+                              case 'Date':
+                                return a.date.localeCompare(b.date);
+                              case 'Equipment':
+                                return a.equipment.localeCompare(b.equipment);
+                              // Add more cases for other headers
+                              case 'Origin DH':
+                                return a.originDH - b.originDH;
+                              case 'Origin':
+                                return a.origin.localeCompare(b.origin);
+                              case 'Destination DH':
+                                return a.destinationDH - b.destinationDH;
+                              case 'Destination':
+                                return a.destination.localeCompare(b.destination);
+                              case 'Company':
+                                return a.company.localeCompare(b.company);
+                              case 'Contact':
+                                return a.contact.localeCompare(b.contact);
+                              case 'Length':
+                                return parseFloat(a.length) - parseFloat(b.length);
+                              case 'Weight':
+                                return parseFloat(a.weight) - parseFloat(b.weight);
+                              case 'Rate':
+                                return parseFloat(a.rate) - parseFloat(b.rate);
+                              default:
+                                return 0;
+                            }
+                          } else {
+                            switch (sortConfig.key) {
+                                case 'Age':
+                                  return b.age - a.age;
+                                case 'Date':
+                                  return b.date.localeCompare(a.date);
+                                case 'Equipment':
+                                  return b.equipment.localeCompare(a.equipment);
+                                // Add more cases for other headers
+                                case 'Origin DH':
+                                    return b.originDH - a.originDH;
+                                  case 'Origin':
+                                    return b.origin.localeCompare(a.origin);
+                                  case 'Destination DH':
+                                    return b.destinationDH - a.destinationDH;
+                                  case 'Destination':
+                                    return b.destination.localeCompare(a.destination);
+                                  case 'Company':
+                                    return b.company.localeCompare(a.company);
+                                  case 'Contact':
+                                    return b.contact.localeCompare(a.contact);
+                                  case 'Length':
+                                    return parseFloat(b.length) - parseFloat(a.length);
+                                  case 'Weight':
+                                    return parseFloat(b.weight) - parseFloat(a.weight);
+                                  case 'Rate':
+                                    return parseFloat(b.rate) - parseFloat(a.rate);
+                                
+                                default:
+                                  return 0;
+                              }
+                            }
+                          });
+                          console.log('Sorted Results', sortedResults);
+
+                        } else {
+                          // If no sorting key, use the original order
+                          sortedResults = [...results];
+                        }
+
+                        this.setState({ results: sortedResults })                     
+              }
+            );
+        } catch (error) {
+            console.error('Error:', error);
+        }
+    }
+
+
     render() { 
 
         return (
@@ -364,51 +611,47 @@ class CarrierSearchList extends Component {
 
                 <div id='resultList'>
                     <h1>Search Results</h1>
-                        <table className="table">
-                            <thead>
-                                <tr>
-                                    <th scope="col">Age</th>
-                                    <th scope="col">Date</th>
-                                    <th scope="col">Equipment</th>
-                                    <th scope="col">Origin DH</th>
-                                    <th scope="col">Origin</th>
-                                    <th scope="col">Destination DH</th>
-                                    <th scope="col">Destination</th>
-                                    <th scope="col">Company</th>
-                                    <th scope="col">Contact</th>
-                                    <th scope="col">Length</th>
-                                    <th scope="col">Weight</th>
-                                    <th scope="col">Rate</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {this.state.searchClickedIndex !== null && (
-                                    <>
-                                        <tr key={this.state.searchClickedIndex}>
-                                            <td colSpan="12">Search {this.state.searchClickedIndex}</td>
+                    {this.state.results.length === 0 ? (
+                            <p>0 results in the db</p>
+                        ) : (
+                            <table className="table">
+                               <thead>
+                                    <tr>
+                                        <th scope="col" onClick={() => this.onHandleSorting('Age')}>Age</th>
+                                        <th scope="col" onClick={() => this.onHandleSorting('Date')}>Date</th>
+                                        <th scope="col" onClick={() => this.onHandleSorting('Equipment')}>Equipment</th>
+                                        <th scope="col" onClick={() => this.onHandleSorting('Origin DH')}>Origin DH</th>
+                                        <th scope="col" onClick={() => this.onHandleSorting('Origin')}>Origin</th>
+                                        <th scope="col" onClick={() => this.onHandleSorting('Destination DH')}>Destination DH</th>
+                                        <th scope="col" onClick={() => this.onHandleSorting('Destination')}>Destination</th>
+                                        <th scope="col" onClick={() => this.onHandleSorting('Company')}>Company</th>
+                                        <th scope="col" onClick={() => this.onHandleSorting('Contact')}>Contact</th>
+                                        <th scope="col" onClick={() => this.onHandleSorting('Length')}>Length</th>
+                                        <th scope="col" onClick={() => this.onHandleSorting('Weight')}>Weight</th>
+                                        <th scope="col" onClick={() => this.onHandleSorting('Rate')}>Rate</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {this.state.results.map((result, index) => (
+                                        <tr key={index}>
+                                            <td>{result.age}</td>
+                                            <td>{result.date}</td>
+                                            <td>{result.equipment}</td>
+                                            <td>{result.originDH}</td>
+                                            <td>{result.origin}</td>
+                                            <td>{result.destinationDH}</td>
+                                            <td>{result.destination}</td>
+                                            <td>{result.company}</td>
+                                            <td>{result.contact}</td>
+                                            <td>{result.length}</td>
+                                            <td>{result.weight}</td>
+                                            <td>${result.rate}</td>
                                         </tr>
-                                        {this.state.loads.map((load, index) => (
-                                            <tr key={index}>
-                                                <td>{load.age}</td>
-                                                <td>{load.date}</td>
-                                                <td>{load.equipment}</td>
-                                                <td>{load.originDH}</td>
-                                                <td>{load.origin}</td>
-                                                <td>{load.destinationDH}</td>
-                                                <td>{load.destination}</td>
-                                                <td>{load.company}</td>
-                                                <td>{load.contact}</td>
-                                                <td>{load.length}</td>
-                                                <td>{load.weight}</td>
-                                                <td>{load.rate}</td>
-                                            </tr>
-                                        ))}
-                                    </>
-                                )}
-                            </tbody>
-                        </table>
+                                    ))}
+                                </tbody>
+                            </table>
+                        )}
                     </div>
-
             </div>
         );
     }
