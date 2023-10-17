@@ -13,148 +13,7 @@ class CarrierSearchList extends Component {
             key: '',
             direction: 'ascending',
         },
-        results: [
-            {
-                age: 2,
-                date: '10/10/2023',
-                equipment: 'FlatBed',
-                originDH: '100',
-                origin: 'Buenos Aires',
-                destinationDH: '200',
-                destination: 'Sao Paulo',
-                company: 'Transporte SA',
-                contact: '+54 11 1234 5678', // Argentina
-                length: '40 ft',
-                weight: '25,000 lbs',
-                rate: '500',
-            },
-            {
-                age: 4,
-                date: '10/12/2023',
-                equipment: 'Van',
-                originDH: '150',
-                origin: 'Lima',
-                destinationDH: '250',
-                destination: 'Bogota',
-                company: 'Cargo Express',
-                contact: '+51 987 654 321', // Peru
-                length: '30 ft',
-                weight: '20,000 lbs',
-                rate: '600',
-            },
-            {
-                age: 6,
-                date: '10/15/2023',
-                equipment: 'Reefer',
-                originDH: '100',
-                origin: 'Mexico City',
-                destinationDH: '300',
-                destination: 'Montevideo',
-                company: 'Logistics Inc.',
-                contact: '+52 55 1234 5678', // Mexico
-                length: '45 ft',
-                weight: '28,000 lbs',
-                rate: '700',
-            },
-            {
-                age: 2,
-                date: '10/17/2023',
-                equipment: 'FlatBed',
-                originDH: '200',
-                origin: 'Santiago',
-                destinationDH: '100',
-                destination: 'Rio de Janeiro',
-                company: 'TransCargo',
-                contact: '+56 2 9876 5432', // Chile
-                length: '40 ft',
-                weight: '24,000 lbs',
-                rate: '550',
-            },
-            {
-                age: 4,
-                date: '10/20/2023',
-                equipment: 'Van',
-                originDH: '100',
-                origin: 'Bogota',
-                destinationDH: '150',
-                destination: 'Lima',
-                company: 'Express Logistics',
-                contact: '+57 1 123 4567', // Colombia
-                length: '30 ft',
-                weight: '22,000 lbs',
-                rate: '580',
-            },
-            {
-                age: 6,
-                date: '10/22/2023',
-                equipment: 'Reefer',
-                originDH: '200',
-                origin: 'Rio de Janeiro',
-                destinationDH: '250',
-                destination: 'Sao Paulo',
-                company: 'CargoMasters',
-                contact: '+55 11 4321 8765', // Brazil
-                length: '45 ft',
-                weight: '26,000 lbs',
-                rate: '650',
-            },
-            {
-                age: 2,
-                date: '10/25/2023',
-                equipment: 'FlatBed',
-                originDH: '150',
-                origin: 'Sao Paulo',
-                destinationDH: '100',
-                destination: 'Buenos Aires',
-                company: 'Cargo Transport',
-                contact: '+54 11 8765 4321', // Argentina
-                length: '40 ft',
-                weight: '23,000 lbs',
-                rate: '560',
-            },
-            {
-                age: 4,
-                date: '10/27/2023',
-                equipment: 'Van',
-                originDH: '100',
-                origin: 'Montevideo',
-                destinationDH: '200',
-                destination: 'Mexico City',
-                company: 'FastCargo',
-                contact: '+598 2 1234 5678', // Uruguay
-                length: '30 ft',
-                weight: '21,000 lbs',
-                rate: '590',
-            },
-            {
-                age: 6,
-                date: '10/30/2023',
-                equipment: 'Reefer',
-                originDH: '200',
-                origin: 'Lima',
-                destinationDH: '250',
-                destination: 'Santiago',
-                company: 'Peru Transport',
-                contact: '+51 999 888 777', // Peru
-                length: '45 ft',
-                weight: '27,000 lbs',
-                rate: '630',
-            },
-            {
-                age: 2,
-                date: '11/1/2023',
-                equipment: 'FlatBed',
-                originDH: '100',
-                origin: 'Buenos Aires',
-                destinationDH: '200',
-                destination: 'Sao Paulo',
-                company: 'Transporte SA',
-                contact: '+54 11 1234 5678', // Argentina
-                length: '40 ft',
-                weight: '25,000 lbs',
-                rate: '500',
-            }
-        ], //Results to display coming from the DB to the searchResults table
+        results: [], //Results to display coming from the DB to the searchResults table
         placeholderText: new Date().toLocaleDateString(),
         filteredLoads: [], // Initialize an empty array to store filtered loads
         loads: [],
@@ -250,7 +109,7 @@ class CarrierSearchList extends Component {
                       searchResolved: true, // Set searchResolved to true
                       searchClickedIndex: index, // Set the clicked index
                     });
-                    this.fetchLoadsData();
+                    this.fetchLoadsData(newSearchData.equipment);
                     this.onEntryClick(e, index);
                   } else {
                     // Handle error, e.g., show an error message
@@ -263,6 +122,7 @@ class CarrierSearchList extends Component {
     }
       
     onDelete = async (e, index, id) => {
+            console.log('onDelete', id);
             e.preventDefault();
             try {
               if (id) {
@@ -281,7 +141,10 @@ class CarrierSearchList extends Component {
                   console.error('Error deleting search entry:', response.statusText);
                 }
               } else {
+                console.log('No ID provided', e, index);
                 // If there's no ID, simply remove the item from the state
+                console.log('onDelete', this.state.searches[index]);
+                let createdAt = this.state.searches[index].createdAt;
                 const updatedSearches = this.state.searches.slice(); // Create a shallow copy of the searches array
                 updatedSearches.splice(index, 1); // Remove the item at the specified index
                 this.setState({
@@ -289,6 +152,16 @@ class CarrierSearchList extends Component {
                   searchResolved: true,
                   searchClickedIndex: -1,
                 });
+
+                axios.get(`/getNewSearchId/${createdAt}`)
+                .then((response) => {
+                    console.log(response.data);
+                    axios.delete(`/newSearch/${response.data[0]._id}`)
+                     .then((response) => {
+                        console.log('Search entry deleted successfully');
+                     })
+                })
+
               }
             } catch (error) {
               console.error('Error:', error);
@@ -303,7 +176,8 @@ class CarrierSearchList extends Component {
         
      }
     
-    onEditSave = async (e, index, id, status) => {
+    onEditSave = async (index, id, equipment) => {
+        console.log('onEditSave', id, equipment);
         try{
             const searchData = this.state.searches[index];
                     if (searchData.equipment === 'select') {
@@ -327,7 +201,7 @@ class CarrierSearchList extends Component {
                         searchResolved: true, // Set searchResolved to true
                         searchClickedIndex: index, // Set the clicked index
                     });
-                    this.fetchLoadsData();
+                    this.fetchLoadsData(equipment);
                                     
                   } else {
                     // Handle update errors
@@ -353,7 +227,7 @@ class CarrierSearchList extends Component {
                         searchResolved: true, // Set searchResolved to true
                         searchClickedIndex: index, // Set the clicked index
                     });
-                    this.fetchLoadsData();                                  
+                    this.fetchLoadsData(equipment);                                  
                   } else {
                     // Handle update errors
                     console.error('Error updating search entry:', response.statusText);
@@ -370,19 +244,23 @@ class CarrierSearchList extends Component {
 
     onEntryClick = (e, index) => {} // This is a placeholder for now
 
-    fetchLoadsData = async () => {
-        axios.get('/loads')
-        .then((response) => {
-          console.log(response.data);
-          this.setState({
-            loads: response.data,
-          });
-        })
-        .catch((error) => {
-          console.error('Error fetching data:', error);
-        });
-    }        
-
+    fetchLoadsData = async (tag) => {
+        console.log('fetchLoadsData', tag);
+    
+        // Send a GET request to fetch loads matching the provided tag
+        axios.get(`/loads?equipment=${tag}`)
+            .then((response) => {
+                console.log(response.data);
+                this.setState({
+                    results: response.data,
+                });
+            })
+            .catch((error) => {
+                console.error('Error fetching data:', error);
+            });
+    }
+    
+    
     handleDateRangeChange = async (startDate, endDate, index) => {
         console.log(this.state.searches[index]);
         const startDateString = startDate ? startDate.toLocaleDateString() : '';
@@ -540,9 +418,9 @@ class CarrierSearchList extends Component {
                                             >
                                             {/*Provide Options*/}
                                             <option value='select'>Equipment</option>
-                                            <option value='flatBed'>FlatBed</option>
-                                            <option value='van'>Van</option>
-                                            <option value='reefer'>Reefer</option>
+                                            <option value='Flatbed'>FlatBed</option>
+                                            <option value='Van'>Van</option>
+                                            <option value='Reefer'>Reefer</option>
                                         </select>
 
                                         <DatePicker 
@@ -598,7 +476,7 @@ class CarrierSearchList extends Component {
                                     <button
                                         type='button'
                                         className="btn btn-primary"
-                                        onClick={e => this.onEditSave(e, index, search._id, search.searchClicked)}
+                                        onClick={e => this.onEditSave(index, search._id, search.equipment)}
                                     >
                                         SAVE
                                     </button>
