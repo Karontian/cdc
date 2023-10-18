@@ -9,6 +9,7 @@ axios.defaults.baseURL = 'http://localhost:3002'
 
 class CarrierSearchList extends Component {
     state = { 
+        activeSearch: [],
         sortConfig: {
             key: '',
             direction: 'ascending',
@@ -30,6 +31,7 @@ class CarrierSearchList extends Component {
             destination: '',
             destinationDH: '',
             age: '',
+
 
         },
         searchResolved: true, // This is a flag to indicate if the search has been resolved or not
@@ -57,7 +59,7 @@ class CarrierSearchList extends Component {
 
       //SEARCH LIST FUNCTIONS
      newSearch = () => {//e is the event, index is the index of the search in the searches array
-
+        console.log(this.state.activeSearch)
         const newSearchData = {
             equipment: '',
             dateRange: 'Select Date Range',
@@ -68,16 +70,28 @@ class CarrierSearchList extends Component {
             age: '2',
             searchClicked: false, // Initialize searchClicked to false for the new search
             editing: false,
-            createdAt : Date.now()
+            createdAt : Date.now(),
 
         };
         this.setState({
             isNewSearch: true, // Set isNewSearch to true
             searches: [...this.state.searches, newSearchData],
             searchResolved: false, // Set searchResolved to false
+            activeSearch: [], // Set activeSearch to an empty array
+            results: [], // Set results to an empty array
+        });
+        console.log('newSearch', newSearchData.searchClicked);
+    }
+    cancelNewSearch = () => {
+        // Remove the last new search data from the state
+        const newSearches = this.state.searches.slice(0, -1);
+        this.setState({
+            isNewSearch: true,
+            searches: newSearches,
+            searchResolved: true, // or set it to false if needed
         });
     }
-
+    
     onChange = (e, index) => {//e is the event, index is the index of the search in the searches array
         e.preventDefault(); // Prevent form submission
         const newSearches = this.state.searches.slice();
@@ -108,6 +122,7 @@ class CarrierSearchList extends Component {
                     this.setState({
                       searchResolved: true, // Set searchResolved to true
                       searchClickedIndex: index, // Set the clicked index
+                      activeSearch: newSearchData,
                     });
                     this.fetchLoadsData(newSearchData.equipment);
                     this.onEntryClick(e, index);
@@ -242,15 +257,22 @@ class CarrierSearchList extends Component {
         }
     }
 
-    onEntryClick = (e, index) => {} // This is a placeholder for now
-
-    fetchLoadsData = async (tag) => {
-        console.log('fetchLoadsData', tag);
+    onEntryClick = (e, index, equipment) => {
+        this.fetchLoadsData(equipment);
+        // console.log('onEntryClick', index, equipment);
+        // const updatedSearches = [...this.state.searches];
+        // updatedSearches[index].searchClicked = true; // Set searchClicked to true
+        // this.setState({ searches: updatedSearches });
+        // this.fetchLoadsData(equipment);
+    }
+      
+          fetchLoadsData = async (tag) => {
     
         // Send a GET request to fetch loads matching the provided tag
         axios.get(`/loads?equipment=${tag}`)
             .then((response) => {
-                console.log(response.data);
+                console.log('fetchLoadsData', response)
+
                 this.setState({
                     results: response.data,
                 });
@@ -407,14 +429,17 @@ class CarrierSearchList extends Component {
                     {this.state.searches.map((search, index) => (
                         <div key={index} id='form' className='container bg-dark border child mb-1'>
                             <div className='overlay' 
-                                 onClick={e=>this.onEntryClick(e, index)}>
-                                <div className='card-body'>
-                                    <form onSubmit={(e) => this.onSubmit(e, index)}>
+                                 onClick={(e)=>this.onEntryClick(e, index, search.equipment)}>
+                                <div className='card-body' >
+                                    <form onSubmit={(e) => this.onSubmit(e, index)}
+  
+                                            >
                                         <select
                                             name='equipment'
                                             disabled={search.searchClicked}
                                             onChange={e => this.onChange(e, index)}
                                             value={search.equipment}
+
                                             >
                                             {/*Provide Options*/}
                                             <option value='select'>Equipment</option>
@@ -454,6 +479,15 @@ class CarrierSearchList extends Component {
                                         SEARCH
                                     </button>
                                 ) : null}
+                                 {!search.searchClicked && !search.editing ? (
+                                    <button
+                                        type='submit'
+                                        className="btn btn-secondary"
+                                        onClick={e => this.cancelNewSearch(e, index, search._id)}
+                                    >
+                                        CANCEL
+                                    </button>
+                                ) : null}
                                 {search.searchClicked ? (
                                     <button
                                         type='button'
@@ -462,7 +496,7 @@ class CarrierSearchList extends Component {
                                     >
                                         EDIT
                                     </button>
-                                ) : null}
+                                ) : null}                                
                                 {search.searchClicked ? (
                                     <button
                                         type='button'
@@ -481,6 +515,15 @@ class CarrierSearchList extends Component {
                                         SAVE
                                     </button>
                                 ) : null}
+                                {search.editing ? (
+                                    <button
+                                        type='button'
+                                        className="btn btn-secondary"
+                                        onClick={e => this.onEditSave(index, search._id, search.equipment)}
+                                    >
+                                        CANCEL
+                                    </button>
+                                ) : null}
                             </div>
                             </div>   
                         </div>
@@ -490,7 +533,7 @@ class CarrierSearchList extends Component {
                 <div id='resultList'>
                     <h1>Search Results</h1>
                     {this.state.results.length === 0 ? (
-                            <p>0 results in the db</p>
+                            <p>Please create search!!</p>
                         ) : (
                             <table className="table">
                                <thead>
