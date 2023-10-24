@@ -56,10 +56,8 @@ class CarrierSearchList extends Component {
             });
       }
 
-
       //SEARCH LIST FUNCTIONS
-     newSearch = () => {//e is the event, index is the index of the search in the searches array
-        console.log(this.state.activeSearch)
+    newSearch = () => {//e is the event, index is the index of the search in the searches array
         const newSearchData = {
             equipment: '',
             dateRange: 'Select Date Range',
@@ -80,8 +78,8 @@ class CarrierSearchList extends Component {
             activeSearch: [], // Set activeSearch to an empty array
             results: [], // Set results to an empty array
         });
-        console.log('newSearch', newSearchData.searchClicked);
     }
+
     cancelNewSearch = () => {
         // Remove the last new search data from the state
         const newSearches = this.state.searches.slice(0, -1);
@@ -94,8 +92,8 @@ class CarrierSearchList extends Component {
     
     onChange = (e, index) => {//e is the event, index is the index of the search in the searches array
         e.preventDefault(); // Prevent form submission
-        const newSearches = this.state.searches.slice();
-        newSearches[index][e.target.name] = e.target.value;
+        const newSearches = this.state.searches.slice(); // Create a shallow copy of the searches array
+        newSearches[index][e.target.name] = e.target.value; // Update the value of the input field that changed
         this.setState({
           searches: newSearches,
         });
@@ -125,7 +123,8 @@ class CarrierSearchList extends Component {
                       activeSearch: newSearchData,
                     });
                     this.fetchLoadsData(newSearchData.equipment);
-                    this.onEntryClick(e, index);
+                    // this.onEntryClick(e, index);
+                    console.log(newSearchData)
                   } else {
                     // Handle error, e.g., show an error message
                     console.error('Error adding NewSearch:', response.statusText);
@@ -136,8 +135,8 @@ class CarrierSearchList extends Component {
               } 
     }
       
-    onDelete = async (e, index, id) => {
-            console.log('onDelete', id);
+    onDelete = async (e, index, id, tag) => {
+            console.log('onDelete', id, this.state.results);
             e.preventDefault();
             try {
               if (id) {
@@ -148,6 +147,7 @@ class CarrierSearchList extends Component {
                   searches: updatedSearches,
                   searchResolved: true,
                   searchClickedIndex: -1,
+                  results: [],
                 });
           
                 if (response.status === 200) {
@@ -160,6 +160,12 @@ class CarrierSearchList extends Component {
                 // If there's no ID, simply remove the item from the state
                 console.log('onDelete', this.state.searches[index]);
                 let createdAt = this.state.searches[index].createdAt;
+                axios.get(`/getNewSearchId/${createdAt}`)
+                  .then((response) => {
+                      console.log(response.data);
+                      this.onDelete(e, index, response.data[0]._id)
+                  })
+                  
                 const updatedSearches = this.state.searches.slice(); // Create a shallow copy of the searches array
                 updatedSearches.splice(index, 1); // Remove the item at the specified index
                 this.setState({
@@ -168,16 +174,10 @@ class CarrierSearchList extends Component {
                   searchClickedIndex: -1,
                 });
 
-                axios.get(`/getNewSearchId/${createdAt}`)
-                .then((response) => {
-                    console.log(response.data);
-                    axios.delete(`/newSearch/${response.data[0]._id}`)
-                     .then((response) => {
-                        console.log('Search entry deleted successfully');
-                     })
-                })
+                
 
               }
+              console.log('onDelete',  this.state.results);
             } catch (error) {
               console.error('Error:', error);
             }
@@ -192,7 +192,6 @@ class CarrierSearchList extends Component {
      }
     
     onEditSave = async (index, id, equipment) => {
-        console.log('onEditSave', id, equipment);
         try{
             const searchData = this.state.searches[index];
                     if (searchData.equipment === 'select') {
@@ -258,21 +257,20 @@ class CarrierSearchList extends Component {
     }
 
     onEntryClick = (e, index, equipment) => {
-        this.fetchLoadsData(equipment);
-        // console.log('onEntryClick', index, equipment);
-        // const updatedSearches = [...this.state.searches];
-        // updatedSearches[index].searchClicked = true; // Set searchClicked to true
-        // this.setState({ searches: updatedSearches });
-        // this.fetchLoadsData(equipment);
+        if (this.state.searches[index].searchClicked ) {
+            this.fetchLoadsData(equipment);
+
+        } else{
+            return
+        }
     }
       
-          fetchLoadsData = async (tag) => {
+    fetchLoadsData = async (tag) => {
     
+      
         // Send a GET request to fetch loads matching the provided tag
         axios.get(`/loads?equipment=${tag}`)
             .then((response) => {
-                console.log('fetchLoadsData', response)
-
                 this.setState({
                     results: response.data,
                 });
@@ -284,7 +282,6 @@ class CarrierSearchList extends Component {
     
     
     handleDateRangeChange = async (startDate, endDate, index) => {
-        console.log(this.state.searches[index]);
         const startDateString = startDate ? startDate.toLocaleDateString() : '';
         const endDateString = endDate ? endDate.toLocaleDateString() : '';
       
