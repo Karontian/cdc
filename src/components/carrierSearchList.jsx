@@ -1,4 +1,4 @@
-import React, { Component } from 'react';
+import React, { Component  } from 'react';
 import 'bootstrap/dist/css/bootstrap.min.css'
 import axios from 'axios'; // Import Axios
 import DatePicker from './utils/datePicker';
@@ -39,17 +39,20 @@ class CarrierSearchList extends Component {
         entryClick: false, // This is a flag to indicate if a search entry was clicked,
         
     } 
+
     componentDidMount() {
           axios.get('/newSearch') // Make a GET request to the server route
             .then((response) => {
-                const formattedSearches = response.data.map((search) => ({
+                const formattedSearches = response.data.map((search) => (
+                  {
                     ...search,
-                    // dateRange: search.dateRange.split('T')[0], // Extract date part only
+                    dateRange: search.dateRange,
                     searchClicked: true, // Initialize searchClicked to false for each search
                   }));
                 this.setState({
                     searches: formattedSearches, // Update the searches state with the fetched data
                 });
+               
             })
             .catch((error) => {
                 console.error('Error fetching data:', error);
@@ -60,7 +63,7 @@ class CarrierSearchList extends Component {
     newSearch = () => {//e is the event, index is the index of the search in the searches array
         const newSearchData = {
             equipment: '',
-            dateRange: 'Select Date Range',
+            dateRange: null,
             origin: '',
             originDH: '100',
             destination: '',
@@ -122,9 +125,8 @@ class CarrierSearchList extends Component {
                       searchClickedIndex: index, // Set the clicked index
                       activeSearch: newSearchData,
                     });
-                    this.fetchLoadsData(newSearchData.equipment);
+                    this.fetchLoadsData(newSearchData.equipment,  newSearchData.dateRange, newSearchData.age);
                     // this.onEntryClick(e, index);
-                    console.log(newSearchData)
                   } else {
                     // Handle error, e.g., show an error message
                     console.error('Error adding NewSearch:', response.statusText);
@@ -133,6 +135,7 @@ class CarrierSearchList extends Component {
                   console.error('Error:', error);
                 }
               } 
+
     }
       
     onDelete = async (e, index, id, tag) => {
@@ -215,7 +218,7 @@ class CarrierSearchList extends Component {
                         searchResolved: true, // Set searchResolved to true
                         searchClickedIndex: index, // Set the clicked index
                     });
-                    this.fetchLoadsData(equipment);
+                    this.fetchLoadsData(equipment, searchData.dateRange, searchData.age);
                                     
                   } else {
                     // Handle update errors
@@ -241,7 +244,7 @@ class CarrierSearchList extends Component {
                         searchResolved: true, // Set searchResolved to true
                         searchClickedIndex: index, // Set the clicked index
                     });
-                    this.fetchLoadsData(equipment);                                  
+                    this.fetchLoadsData(equipment, searchData.dateRange, searchData.age);                                  
                   } else {
                     // Handle update errors
                     console.error('Error updating search entry:', response.statusText);
@@ -258,54 +261,81 @@ class CarrierSearchList extends Component {
 
     onEntryClick = (e, index, equipment) => {
         if (this.state.searches[index].searchClicked ) {
-            this.fetchLoadsData(equipment);
+            this.fetchLoadsData(equipment, this.state.searches[index].dateRange, this.state.searches[index].age);
 
         } else{
             return
         }
     }
+    fetchLoadsData = async (tag, dateRange, age) => {
       
-    fetchLoadsData = async (tag) => {
+      // Function to format a date string
+      function formatDateString(dateString) {
+        const dateParts = dateString.split('T');
+        if (dateParts.length >= 1) {
+          return dateParts[0].replace(/-/g, '/'); // Get the date part before 'T'
+        } else {
+          return dateString; // Use the original string if 'T' is not found
+        }
+      }
     
-      
-        // Send a GET request to fetch loads matching the provided tag
-        axios.get(`/loads?equipment=${tag}`)
-            .then((response) => {
-                this.setState({
-                    results: response.data,
-                });
-            })
-            .catch((error) => {
-                console.error('Error fetching data:', error);
-            });
+      // Send a GET request to fetch loads matching the provided tag
+      axios.get(`/loads?equipment=${tag}`)
+        .then((response) => {
+          // Format the date strings in the response data
+          const formattedResults = response.data.map((result) => ({
+            ...result,
+            date: formatDateString(result.date), // Replace 'date' with your actual date field
+          }));
+    
+          const filteredResults = formattedResults.filter((result) => {
+            if (dateRange) {
+              const [startDateString, endDateString] = dateRange.split(' - ');
+              const startDate = Date.parse(startDateString);
+              const endDate = Date.parse(endDateString);
+              const resultDate = Date.parse(result.date);
+        
+              if (resultDate >= startDate && resultDate <= endDate && result.age <= age) {
+                return true;
+              }
+              return false;
+            }
+            return true; // Include all results if no date range is provided
+    
+          });
+    
+          console.log('filteredResults', filteredResults);
+    
+          this.setState({
+            results: filteredResults,
+          });
+        })
+        .catch((error) => {
+          console.error('Error fetching data:', error);
+        });
     }
-    
     
     handleDateRangeChange = async (startDate, endDate, index) => {
         const startDateString = startDate ? startDate.toLocaleDateString() : '';
         const endDateString = endDate ? endDate.toLocaleDateString() : '';
       
+        const updatedSearches = [...this.state.searches];
         let placeholderText = '';
-
+      
         if (startDate && endDate) {
-            const updatedSearches = [...this.state.searches];
-            updatedSearches[index].dateRange = `${startDateString}-${endDateString}`;
-            this.setState({ searches: updatedSearches });
-        
-            placeholderText = `${startDateString} - ${endDateString}`;
-
-            // Rest of your code...
+          updatedSearches[index].dateRange = `${startDateString} - ${endDateString}`;
+          placeholderText = `${startDateString} - ${endDateString}`;
         } else if (startDate) {
-            const updatedSearches = [...this.state.searches];
-            updatedSearches[index].dateRange = startDateString;
-            this.setState({ searches: updatedSearches });        
-            placeholderText = startDateString;
-
+          updatedSearches[index].dateRange = startDateString;
+          placeholderText = startDateString;
         }
-          // Update the placeholderText state
-            this.setState({
-                placeholderText,
-            });
+      
+        // Update the searches and placeholderText state
+        this.setState({
+          searches: updatedSearches,
+          placeholderText,
+        });
+
     }
 
     //SEARCH RESULTS FUNCTIONS
@@ -407,10 +437,9 @@ class CarrierSearchList extends Component {
             console.error('Error:', error);
         }
     }
-
+    
 
     render() { 
-
         return (
             <div>
                 <h1>SEARCH  LIST</h1>
@@ -448,7 +477,6 @@ class CarrierSearchList extends Component {
                                         <DatePicker 
                                         disabled={search.searchClicked} 
                                         onDateRangeChange={(startDate, endDate) => this.handleDateRangeChange(startDate, endDate, index)} 
-                                        placeholderText={this.state.placeholderText}
                                         dateRange={search.dateRange}
                                         />
 
@@ -530,9 +558,9 @@ class CarrierSearchList extends Component {
                 <div id='resultList'>
                     <h1>Search Results</h1>
                     {this.state.results.length === 0 ? (
-                            <p>Please create search!!</p>
-                        ) : (
-                            <table className="table">
+                            <p> 0 results in DB!!</p>
+                        ) : (   
+                            <table className="table"><p>{this.state.results.length} results in DB!!</p>
                                <thead>
                                     <tr>
                                         <th scope="col" onClick={() => this.onHandleSorting('Age')}>Age</th>

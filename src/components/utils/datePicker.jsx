@@ -1,69 +1,35 @@
-import React, { Component } from 'react';
+import { useState } from 'react';
 import DatePicker from 'react-datepicker';
 import 'react-datepicker/dist/react-datepicker.css';
 
-class DateRangePicker extends Component {
-  constructor(props) {
-    super(props);
-    this.state = {
-      selected: null,      // Selected date or start date of the range
-      startDate: null,     // Start date of the range
-      endDate: null,       // End date of the range
-      selecting: false,    // Indicates if a range is being selected
-    };
-  }
+const DateRange = (props) => {
+  const [startDate, setStartDate] = useState(
+    props.dateRange ? new Date(props.dateRange.split(' - ')[0]) : null
+  );
+  const [endDate, setEndDate] = useState(
+    props.dateRange ? new Date(props.dateRange.split(' - ')[1]) : null
+  );
 
-  
-  formatSelectedRange = () => {
-    const { startDate, endDate } = this.state;
-    if (startDate && endDate) {
-      return `${startDate.toLocaleDateString()}-${endDate.toLocaleDateString()}`;
+  const onChange = (dates) => {
+    const [start, end] = dates;
+    setStartDate(start);
+    setEndDate(end);
+    if (start && end) {
+      // If both start and end dates are available, call the parent component's callback
+      props.onDateRangeChange(start, end);
     }
-
-    return startDate ? startDate.toLocaleDateString() : '';
   };
 
-  handleDateChange = (date) => {
-    const { startDate, endDate } = this.state;
+  return (
+    <DatePicker
+      selected={startDate}
+      disabled={props.disabled}
+      onChange={onChange}
+      startDate={startDate}
+      endDate={endDate}
+      selectsRange
+    />
+  );
+};
 
-    if (!startDate || endDate) {
-      // If no start date selected or an end date is already selected, start a new range
-      this.setState({
-        startDate: date,
-        endDate: null,
-        selecting: true,   // Set the selecting flag to true
-      });
-    } else if (startDate && !endDate) {
-      // If a start date is selected but no end date, set the end date
-      this.setState({
-        endDate: date,
-        selecting: false,  // Set the selecting flag to false
-      });
-    }
-
-      // Pass the date range to the master component when it changes
-      this.props.onDateRangeChange(startDate, date);
-
-  };
-
-  render() {
-    return (
-      <div>
-        <DatePicker
-          disabled={this.props.disabled}
-          selected={null}
-          onChange={this.handleDateChange}
-          selectsStart
-          startDate={this.state.startDate}
-          endDate={this.state.endDate}
-          placeholderText={this.props.dateRange}
-          selectsEnd
-          shouldCloseOnSelect={false}
-        />
-        
-      </div>
-    );
-  }
-}
-
-export default DateRangePicker;
+export default DateRange;
