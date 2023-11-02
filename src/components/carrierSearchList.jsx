@@ -4,7 +4,7 @@ import axios from 'axios'; // Import Axios
 import DatePicker from './utils/datePicker';
 import 'react-date-range/dist/styles.css'; // Import styles
 import 'react-date-range/dist/theme/default.css'; // Import theme styles
-
+import AutoSugestDropDown from './utils/autoSugestDropDown';
 axios.defaults.baseURL = 'http://localhost:3002'
 
 class CarrierSearchList extends Component {
@@ -453,7 +453,7 @@ class CarrierSearchList extends Component {
 
                 <div id='searchList'>
                     {this.state.searches.map((search, index) => (
-                        <div key={index} id='form' className='container bg-dark border child mb-1'>
+                        <div key={index} id='form' className='container bg-secondary border child mb-1'>
                             <div className='overlay' 
                                  onClick={(e)=>this.onEntryClick(e, index, search.equipment)}>
                                 <div className='card-body' >
@@ -481,7 +481,7 @@ class CarrierSearchList extends Component {
                                         />
 
                                         {/* <input type='date' name='dateRange' value={search.dateRange} onChange={e => this.onChange(e, index)} disabled={search.searchClicked} /> */}
-
+                                        <AutoSugestDropDown/>
                                         <input type='text' name='origin' value={search.origin} onChange={e => this.onChange(e, index)} disabled={search.searchClicked} />
                                         <input type='number' name='originDH' value={search.originDH} onChange={e => this.onChange(e, index)} disabled={search.searchClicked} />
                                         <input type='text' name='destination' value={search.destination} onChange={e => this.onChange(e, index)} disabled={search.searchClicked} />
@@ -597,7 +597,7 @@ class CarrierSearchList extends Component {
                                 </tbody>
                             </table>
                         )}
-                    </div>
+                </div>
             </div>
         );
     }
