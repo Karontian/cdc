@@ -5,10 +5,17 @@ import DatePicker from './utils/datePicker';
 import 'react-date-range/dist/styles.css'; // Import styles
 import 'react-date-range/dist/theme/default.css'; // Import theme styles
 import AutoSugestDropDown from './utils/autoSugestDropDown';
+import AutoSuggestDropDown from './utils/autoSugestDropDown';
+import AutoSuggestDropDownDestination from './utils/autoSugestDropDownDestination';
+
 axios.defaults.baseURL = 'http://localhost:3002'
 
 class CarrierSearchList extends Component {
     state = { 
+        search:{
+          origin: '',
+          destination: '',
+        },
         activeSearch: [],
         sortConfig: {
             key: '',
@@ -43,6 +50,7 @@ class CarrierSearchList extends Component {
     componentDidMount() {
           axios.get('/newSearch') // Make a GET request to the server route
             .then((response) => {
+                console.log('response', response.data);
                 const formattedSearches = response.data.map((search) => (
                   {
                     ...search,
@@ -113,6 +121,11 @@ class CarrierSearchList extends Component {
                                   alert('Please select equipment type');
                                   return;
                               }
+                              if (!newSearchData.dateRange) {
+                                alert('Please select a date range');
+                                return; // Stop the function if dateRange is empty or null
+                            }
+                    
                  newSearchData.searchClicked = true; // Set searchClicked to true
                 try {
                   // Make a POST request to your server using Axios
@@ -203,8 +216,10 @@ class CarrierSearchList extends Component {
                     }
         
             if(id){
+              console.log('onEditSave', id, searchData);
                 const response = await axios.put(`/newSearch/${id}`, searchData);
-                const formattedDate = response.data.dateRange.split('T')[0];
+                console.log('response', response);
+                const formattedDate = response.data.dateRange.split('T')[0] 
 
                 if (response.status === 200) {
                     // Handle the successful update (e.g., display a success message)
@@ -338,6 +353,7 @@ class CarrierSearchList extends Component {
 
     }
 
+
     //SEARCH RESULTS FUNCTIONS
 
     onHandleSorting = async (header) => {
@@ -437,6 +453,42 @@ class CarrierSearchList extends Component {
             console.error('Error:', error);
         }
     }
+
+    onHandleOriginChange = (newOrigin, index) => {
+      console.log('onHandleOriginChange', newOrigin, index); 
+      //  Create a shallow copy of the searches array
+        const newSearches = [...this.state.searches];
+        console.log('newSearches', newSearches[index]);
+        newSearches[index].origin = newOrigin;
+
+        // // Update the 'origin' property of the active search
+        // if (this.state.activeSearch) {
+        //   newSearches[index].origin = newOrigin;
+        // }
+
+        this.setState({
+          searches: newSearches,
+        });
+
+    }
+
+    onHandeDestinationChange = (newDestination, index) => {
+      console.log('onHandeDestinationChange', newDestination, index); 
+      //  Create a shallow copy of the searches array
+        const newSearches = [...this.state.searches];
+        console.log('newSearches', newSearches[index]);
+        newSearches[index].destination = newDestination;
+
+        // // Update the 'origin' property of the active search
+        // if (this.state.activeSearch) {
+        //   newSearches[index].origin = newOrigin;
+        // }
+
+        this.setState({
+          searches: newSearches,
+        });
+
+    }
     
 
     render() { 
@@ -479,12 +531,26 @@ class CarrierSearchList extends Component {
                                         onDateRangeChange={(startDate, endDate) => this.handleDateRangeChange(startDate, endDate, index)} 
                                         dateRange={search.dateRange}
                                         />
-
-                                        {/* <input type='date' name='dateRange' value={search.dateRange} onChange={e => this.onChange(e, index)} disabled={search.searchClicked} /> */}
-                                        <AutoSugestDropDown/>
-                                        <input type='text' name='origin' value={search.origin} onChange={e => this.onChange(e, index)} disabled={search.searchClicked} />
+                                        <AutoSugestDropDown
+                                          name='origin'
+                                          value={search.origin}
+                                          onChange={(e) => this.onChange(e, index)}  
+                                          disabled={search.searchClicked}
+                                          onHandleOriginChange={this.onHandleOriginChange}
+                                          index={index}
+                                          origin={search.origin}
+                                        />
                                         <input type='number' name='originDH' value={search.originDH} onChange={e => this.onChange(e, index)} disabled={search.searchClicked} />
-                                        <input type='text' name='destination' value={search.destination} onChange={e => this.onChange(e, index)} disabled={search.searchClicked} />
+
+                                        <AutoSuggestDropDownDestination
+                                          name='destination'
+                                          value={search.destination}
+                                          onChange={(e) => this.onChange(e, index)}
+                                          disabled={search.searchClicked}
+                                          onHandleDestinationChange={this.onHandeDestinationChange}
+                                          index={index}
+                                          destination={search.destination}
+                                        />  
                                         <input type='number' name='destinationDH' value={search.destinationDH} onChange={e => this.onChange(e, index)} disabled={search.searchClicked} />
                                         <select name="age" value={search.age} onChange={e => this.onChange(e, index)} disabled={search.searchClicked}>
                                             <option value='2'>2</option>

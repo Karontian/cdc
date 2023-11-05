@@ -11,13 +11,14 @@ const DateRange = (props) => {
   );
 
   const onChange = (dates) => {
+    console.log(dates)  
     const [start, end] = dates;
     setStartDate(start);
     setEndDate(end);
     if (start && end) {
       // If both start and end dates are available, call the parent component's callback
       props.onDateRangeChange(start, end);
-    }
+    } 
   };
 
   return (
