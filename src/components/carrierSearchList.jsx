@@ -5,7 +5,6 @@ import DatePicker from './utils/datePicker';
 import 'react-date-range/dist/styles.css'; // Import styles
 import 'react-date-range/dist/theme/default.css'; // Import theme styles
 import AutoSugestDropDown from './utils/autoSugestDropDown';
-import AutoSuggestDropDown from './utils/autoSugestDropDown';
 import AutoSuggestDropDownDestination from './utils/autoSugestDropDownDestination';
 
 axios.defaults.baseURL = 'http://localhost:3002'
@@ -356,121 +355,109 @@ class CarrierSearchList extends Component {
 
     //SEARCH RESULTS FUNCTIONS
 
+
     onHandleSorting = async (header) => {
-        try {
-            this.setState(
-                (prevState) => {
-                    let direction = 'ascending';
-                    if (prevState.sortConfig.key === header && prevState.sortConfig.direction === 'ascending') {
-                        direction = 'descending';
-                    }
-        
-                    // Return the updated state
-                    return { sortConfig: { key: header, direction } };
-                },
-                () => {
-                    console.log('Sort config after update:', this.state.sortConfig);
-                    const { results, sortConfig } = this.state;
-                    let sortedResults;
-                    if (sortConfig.key) {
-                        console.log('results', results)
-                        sortedResults = [...results].sort((a, b) => {
-                          if (sortConfig.direction === 'ascending') {
-                            // You can add logic for different headers
-                            switch (sortConfig.key) {
+      try {
+          this.setState(
+              (prevState) => {
+                  let direction = 'ascending';
+                  if (prevState.sortConfig.key === header && prevState.sortConfig.direction === 'ascending') {
+                      direction = 'descending';
+                  }
+      
+                  // Return the updated state
+                  return { sortConfig: { key: header, direction } };
+              },
+              () => {
+                  console.log('Sort config after update:', this.state.sortConfig);
+                  const { results, sortConfig } = this.state;
+                  let sortedResults;
+                  if (sortConfig.key) {
+                      console.log('results', results)
+                      sortedResults = [...results].sort((a, b) => {
+                        if (sortConfig.direction === 'ascending') {
+                          // You can add logic for different headers
+                          switch (sortConfig.key) {
+                            case 'Age':
+                              return a.age - b.age;
+                            case 'Date':
+                              return a.date.localeCompare(b.date);
+                            case 'Equipment':
+                              return a.equipment.localeCompare(b.equipment);
+                            // Add more cases for other headers
+                            case 'Origin DH':
+                              return a.originDH - b.originDH;
+                            case 'Origin':
+                              return a.origin.localeCompare(b.origin);
+                            case 'Destination DH':
+                              return a.destinationDH - b.destinationDH;
+                            case 'Destination':
+                              return a.destination.localeCompare(b.destination);
+                            case 'Miles':
+                              return a.miles - b.miles; // Sort by miles
+                            case 'Company':
+                              return a.company.localeCompare(b.company);
+                            case 'Contact':
+                              return a.contact.localeCompare(b.contact);
+                            case 'Length':
+                              return parseFloat(a.length) - parseFloat(b.length);
+                            case 'Weight':
+                              return parseFloat(a.weight) - parseFloat(b.weight);
+                            case 'Rate':
+                              return parseFloat(a.rate) - parseFloat(b.rate);
+                            default:
+                              return 0;
+                          }
+                        } else {
+                          switch (sortConfig.key) {
                               case 'Age':
-                                return a.age - b.age;
+                                return b.age - a.age;
                               case 'Date':
-                                return a.date.localeCompare(b.date);
+                                return b.date.localeCompare(a.date);
                               case 'Equipment':
-                                return a.equipment.localeCompare(b.equipment);
+                                return b.equipment.localeCompare(a.equipment);
                               // Add more cases for other headers
                               case 'Origin DH':
-                                return a.originDH - b.originDH;
-                              case 'Origin':
-                                return a.origin.localeCompare(b.origin);
-                              case 'Destination DH':
-                                return a.destinationDH - b.destinationDH;
-                              case 'Destination':
-                                return a.destination.localeCompare(b.destination);
-                              case 'Company':
-                                return a.company.localeCompare(b.company);
-                              case 'Contact':
-                                return a.contact.localeCompare(b.contact);
-                              case 'Length':
-                                return parseFloat(a.length) - parseFloat(b.length);
-                              case 'Weight':
-                                return parseFloat(a.weight) - parseFloat(b.weight);
-                              case 'Rate':
-                                return parseFloat(a.rate) - parseFloat(b.rate);
+                                  return b.originDH - a.originDH;
+                                case 'Origin':
+                                  return b.origin.localeCompare(a.origin);
+                                case 'Destination DH':
+                                  return b.destinationDH - a.destinationDH;
+                                case 'Destination':
+                                  return b.destination.localeCompare(a.destination);
+                                case 'Miles':
+                                  return b.miles - a.miles; // Sort by miles in descending order
+                                case 'Company':
+                                  return b.company.localeCompare(a.company);
+                                case 'Contact':
+                                  return b.contact.localeCompare(a.contact);
+                                case 'Length':
+                                  return parseFloat(b.length) - parseFloat(a.length);
+                                case 'Weight':
+                                  return parseFloat(b.weight) - parseFloat(a.weight);
+                                case 'Rate':
+                                  return parseFloat(b.rate) - parseFloat(a.rate);
+                              
                               default:
                                 return 0;
-                            }
-                          } else {
-                            switch (sortConfig.key) {
-                                case 'Age':
-                                  return b.age - a.age;
-                                case 'Date':
-                                  return b.date.localeCompare(a.date);
-                                case 'Equipment':
-                                  return b.equipment.localeCompare(a.equipment);
-                                // Add more cases for other headers
-                                case 'Origin DH':
-                                    return b.originDH - a.originDH;
-                                  case 'Origin':
-                                    return b.origin.localeCompare(a.origin);
-                                  case 'Destination DH':
-                                    return b.destinationDH - a.destinationDH;
-                                  case 'Destination':
-                                    return b.destination.localeCompare(a.destination);
-                                  case 'Company':
-                                    return b.company.localeCompare(a.company);
-                                  case 'Contact':
-                                    return b.contact.localeCompare(a.contact);
-                                  case 'Length':
-                                    return parseFloat(b.length) - parseFloat(a.length);
-                                  case 'Weight':
-                                    return parseFloat(b.weight) - parseFloat(a.weight);
-                                  case 'Rate':
-                                    return parseFloat(b.rate) - parseFloat(a.rate);
-                                
-                                default:
-                                  return 0;
                               }
                             }
                           });
                           console.log('Sorted Results', sortedResults);
-
-                        } else {
-                          // If no sorting key, use the original order
-                          sortedResults = [...results];
-                        }
-
-                        this.setState({ results: sortedResults })                     
-              }
-            );
-        } catch (error) {
-            console.error('Error:', error);
-        }
-    }
-
-    onHandleOriginChange = (newOrigin, index) => {
-      console.log('onHandleOriginChange', newOrigin, index); 
-      //  Create a shallow copy of the searches array
-        const newSearches = [...this.state.searches];
-        console.log('newSearches', newSearches[index]);
-        newSearches[index].origin = newOrigin;
-
-        // // Update the 'origin' property of the active search
-        // if (this.state.activeSearch) {
-        //   newSearches[index].origin = newOrigin;
-        // }
-
-        this.setState({
-          searches: newSearches,
-        });
-
-    }
+  
+                      } else {
+                        // If no sorting key, use the original order
+                        sortedResults = [...results];
+                      }
+  
+                      this.setState({ results: sortedResults })                     
+            }
+          );
+      } catch (error) {
+          console.error('Error:', error);
+      }
+  }
+  
 
     onHandeDestinationChange = (newDestination, index) => {
       console.log('onHandeDestinationChange', newDestination, index); 
@@ -636,11 +623,13 @@ class CarrierSearchList extends Component {
                                         <th scope="col" onClick={() => this.onHandleSorting('Origin')}>Origin</th>
                                         <th scope="col" onClick={() => this.onHandleSorting('Destination DH')}>Destination DH</th>
                                         <th scope="col" onClick={() => this.onHandleSorting('Destination')}>Destination</th>
+                                        <th scope="col" onClick={() => this.onHandleSorting('Miles')}>Miles</th>
                                         <th scope="col" onClick={() => this.onHandleSorting('Company')}>Company</th>
                                         <th scope="col" onClick={() => this.onHandleSorting('Contact')}>Contact</th>
                                         <th scope="col" onClick={() => this.onHandleSorting('Length')}>Length</th>
                                         <th scope="col" onClick={() => this.onHandleSorting('Weight')}>Weight</th>
                                         <th scope="col" onClick={() => this.onHandleSorting('Rate')}>Rate</th>
+                                        
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -653,6 +642,7 @@ class CarrierSearchList extends Component {
                                             <td>{result.origin}</td>
                                             <td>{result.destinationDH}</td>
                                             <td>{result.destination}</td>
+                                            <td>{result.miles}</td>
                                             <td>{result.company}</td>
                                             <td>{result.contact}</td>
                                             <td>{result.length}</td>
