@@ -49,7 +49,7 @@ class CarrierSearchList extends Component {
     componentDidMount() {
           axios.get('/newSearch') // Make a GET request to the server route
             .then((response) => {
-                console.log('response', response.data);
+                console.log('SEARCHES FROM SERVER', response.data);
                 const formattedSearches = response.data.map((search) => (
                   {
                     ...search,
@@ -137,8 +137,13 @@ class CarrierSearchList extends Component {
                       searchClickedIndex: index, // Set the clicked index
                       activeSearch: newSearchData,
                     });
-                    this.fetchLoadsData(newSearchData.equipment,  newSearchData.dateRange, newSearchData.age);
-                    // this.onEntryClick(e, index);
+                    console.log('PRE FETCH', newSearchData.origin);
+                    if (newSearchData.origin === 'Z0' || newSearchData.origin === 'Z1') {
+                      this.fetchLoadsData(newSearchData.equipment, newSearchData.dateRange, newSearchData.age, newSearchData.origin);
+                    } else {
+                      this.fetchLoadsData(newSearchData.equipment, newSearchData.dateRange, newSearchData.age);
+                    }
+                                // this.onEntryClick(e, index);
                   } else {
                     // Handle error, e.g., show an error message
                     console.error('Error adding NewSearch:', response.statusText);
@@ -232,7 +237,7 @@ class CarrierSearchList extends Component {
                         searchResolved: true, // Set searchResolved to true
                         searchClickedIndex: index, // Set the clicked index
                     });
-                    this.fetchLoadsData(equipment, searchData.dateRange, searchData.age);
+                    this.fetchLoadsData(equipment, searchData.dateRange, searchData.age, searchData.origin);
                                     
                   } else {
                     // Handle update errors
@@ -258,7 +263,7 @@ class CarrierSearchList extends Component {
                         searchResolved: true, // Set searchResolved to true
                         searchClickedIndex: index, // Set the clicked index
                     });
-                    this.fetchLoadsData(equipment, searchData.dateRange, searchData.age);                                  
+                    this.fetchLoadsData(equipment, searchData.dateRange, searchData.age, searchData.origin);                                  
                   } else {
                     // Handle update errors
                     console.error('Error updating search entry:', response.statusText);
@@ -281,7 +286,37 @@ class CarrierSearchList extends Component {
             return
         }
     }
-    fetchLoadsData = async (tag, dateRange, age) => {
+    fetchLoadsData = async (tag, dateRange, age, locationCode) => {
+          console.log('fetchLoadsData', tag, dateRange, age, locationCode);
+      const Z0 = [
+        { name: "Belize", abb: "BZ" },
+        { name: "Canada", abb: "CA" },
+        { name: "Costa Rica", abb: "CR" },
+        { name: "El Salvador", abb: "SV" },
+        { name: "Guatemala", abb: "GT" },
+        { name: "Honduras", abb: "HN" },
+        { name: "Mexico", abb: "MX" },
+        { name: "Nicaragua", abb: "NI" },
+        { name: "Panama", abb: "PA" },
+        { name: "United States", abb: "US" },
+      ];
+      
+      const Z1 = [
+        { name: "Argentina", abb: "AR" },
+        { name: "Bolivia", abb: "BO" },
+        { name: "Brazil", abb: "BR" },
+        { name: "Chile", abb: "CL" },
+        { name: "Colombia", abb: "CO" },
+        { name: "Ecuador", abb: "EC" },
+        { name: "Guyana", abb: "GY" },
+        { name: "Paraguay", abb: "PY" },
+        { name: "Peru", abb: "PE" },
+        { name: "Suriname", abb: "SR" },
+        { name: "Uruguay", abb: "UY" },
+        { name: "Venezuela", abb: "VE" },
+
+        
+      ];
       
       // Function to format a date string
       function formatDateString(dateString) {
@@ -292,7 +327,6 @@ class CarrierSearchList extends Component {
           return dateString; // Use the original string if 'T' is not found
         }
       }
-    
       // Send a GET request to fetch loads matching the provided tag
       axios.get(`/loads?equipment=${tag}`)
         .then((response) => {
@@ -301,15 +335,23 @@ class CarrierSearchList extends Component {
             ...result,
             date: formatDateString(result.date), // Replace 'date' with your actual date field
           }));
-    
           const filteredResults = formattedResults.filter((result) => {
             if (dateRange) {
               const [startDateString, endDateString] = dateRange.split(' - ');
               const startDate = Date.parse(startDateString);
               const endDate = Date.parse(endDateString);
               const resultDate = Date.parse(result.date);
-        
-              if (resultDate >= startDate && resultDate <= endDate && result.age <= age) {
+              const stateAbbreviation = result.origin.slice(-2);
+              const isStateInZ0 = Z0.some((location) => location.abb === stateAbbreviation);
+              const isStateInZ1 = Z1.some((location) => location.abb === stateAbbreviation);
+    
+                  
+              if (
+                resultDate >= startDate &&
+                resultDate <= endDate &&
+                result.age <= age &&
+                ((locationCode === 'Z0' && isStateInZ0) || (locationCode === 'Z1' && isStateInZ1))
+              ) {
                 return true;
               }
               return false;
@@ -458,6 +500,23 @@ class CarrierSearchList extends Component {
       }
   }
   
+    onHandleOriginChange = (newOrigin, index) => {
+      // console.log('onHandleOriginChange', newOrigin, index); 
+      //  Create a shallow copy of the searches array
+        const newSearches = [...this.state.searches];
+        // console.log('newSearches', newSearches[index]);
+        newSearches[index].origin = newOrigin;
+
+        // // Update the 'origin' property of the active search
+        // if (this.state.activeSearch) {
+        //   newSearches[index].origin = newOrigin;
+        // }
+
+        this.setState({
+          searches: newSearches,
+        });
+    }
+
 
     onHandeDestinationChange = (newDestination, index) => {
       console.log('onHandeDestinationChange', newDestination, index); 
@@ -476,6 +535,13 @@ class CarrierSearchList extends Component {
         });
 
     }
+
+    locationGroups = (results) => {
+    
+
+    }
+
+    
     
 
     render() { 
@@ -613,7 +679,9 @@ class CarrierSearchList extends Component {
                     {this.state.results.length === 0 ? (
                             <p> 0 results in DB!!</p>
                         ) : (   
-                            <table className="table"><p>{this.state.results.length} results in DB!!</p>
+                          <div>
+                            <p>{this.state.results.length} results in DB!!</p>
+                            <table className="table">
                                <thead>
                                     <tr>
                                         <th scope="col" onClick={() => this.onHandleSorting('Age')}>Age</th>
@@ -652,6 +720,7 @@ class CarrierSearchList extends Component {
                                     ))}
                                 </tbody>
                             </table>
+                          </div>
                         )}
                 </div>
             </div>

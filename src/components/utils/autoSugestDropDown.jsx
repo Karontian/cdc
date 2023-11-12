@@ -51,6 +51,10 @@ const renderSuggestion = suggestion => (
           const suggestions = response.data.results.map((result) => ({
             name: result.formatted_address,
          }));
+
+         suggestions.push({ name: 'Z0' });
+         suggestions.push({ name: 'Z1' });
+   
          this.setState({ suggestions });
         } catch (error) {
           console.log(error);
