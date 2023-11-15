@@ -1,18 +1,22 @@
-import {React, Component} from 'react';
-import Autosuggest from 'react-autosuggest';
-import axios from 'axios';
+import React from 'react';
+import CommonAutoSuggest from './CommonAutoSuggest';
+// import axios from 'axios';
 
-const API_KEY = 'AIzaSyDdjMOgYAuUspOfs2tmKbDIGhiLHn2RbGI'
-const url = 'https://maps.googleapis.com/maps/api/geocode/json?address='
 
-const getSuggestionValue = suggestion => suggestion.name;
-const renderSuggestion = suggestion => (
-    <div>
-      {suggestion.name}
-    </div>
-  );
 
-class autoSugestDropDownDestination extends Component {
+// const API_KEY = 'AIzaSyDdjMOgYAuUspOfs2tmKbDIGhiLHn2RbGI'
+// const url = 'https://maps.googleapis.com/maps/api/geocode/json?address='
+
+
+
+// const getSuggestionValue = suggestion => suggestion.name;
+// const renderSuggestion = suggestion => (
+//     <div>
+//       {suggestion.name}
+//     </div>
+//   );
+
+class autoSugestDropDownDestination extends React.Component {
     constructor() {
       super();
       this.state = {
@@ -29,18 +33,18 @@ class autoSugestDropDownDestination extends Component {
   
       };
       
-      fetchSuggestions = async (value) => {
-          try {
-            const response = await axios.get(`${url}${value}&key=${API_KEY}`);
-            console.log(response) 
-            const suggestions = response.data.results.map((result) => ({
-              name: result.formatted_address,
-           }));
-           this.setState({ suggestions });
-          } catch (error) {
-            console.log(error);
-          }
-        }; 
+      // fetchSuggestions = async (value) => {
+      //     try {
+      //       const response = await axios.get(`${url}${value}&key=${API_KEY}`);
+      //       console.log(response) 
+      //       const suggestions = response.data.results.map((result) => ({
+      //         name: result.formatted_address,
+      //      }));
+      //      this.setState({ suggestions });
+      //     } catch (error) {
+      //       console.log(error);
+      //     }
+      //   }; 
     
       // Autosuggest will call this function every time you need to update suggestions.
       // You already implemented this logic above, so just use it.
@@ -55,32 +59,28 @@ class autoSugestDropDownDestination extends Component {
         });
       };
     
-    render() { 
-      const {  suggestions } = this.state;
-      const {  disabled, destination, index } = this.props;
+    render() {      // const {  suggestions } = this.state;
+      const {  disabled, index, destination } = this.props;
   
       // Autosuggest will pass through all these props to the input.
-      const inputProps = {
-        placeholder: 'Type a load Destination',
-        value: destination,
-        onChange: this.onChange,
-        disabled: disabled
-      };
+      // const inputProps = {
+      //   placeholder: 'Type a load Destination',
+      //   value: destination,
+      //   onChange: this.onChange,
+      //   disabled: disabled
+      // };
   
       // Finally, render it!
       return (
-        <Autosuggest
-          index={index}
-          disabled={disabled}
-          suggestions={suggestions}
-          onSuggestionsFetchRequested={this.onSuggestionsFetchRequested}
-          onSuggestionsClearRequested={this.onSuggestionsClearRequested}
-          getSuggestionValue={getSuggestionValue}
-          renderSuggestion={renderSuggestion}
-          inputProps={inputProps}
-        />
+            <CommonAutoSuggest
+            // placeholder='Type a load Origin'
+            index={index}
+            disabled={disabled}
+            onHandleChange={this.props.onHandleDestinationChange}
+            value={destination}
+          />
       );
-    }
+      }
     }
     
 

@@ -4,8 +4,8 @@ import axios from 'axios'; // Import Axios
 import DatePicker from './utils/datePicker';
 import 'react-date-range/dist/styles.css'; // Import styles
 import 'react-date-range/dist/theme/default.css'; // Import theme styles
-import AutoSugestDropDown from './utils/autoSugestDropDown';
-import AutoSuggestDropDownDestination from './utils/autoSugestDropDownDestination';
+import AutoSugestDropDown from './utils/AutoSugestDropDown';
+import AutoSuggestDropDownDestination from './utils/AutoSugestDropDownDestination';
 
 axios.defaults.baseURL = 'http://localhost:3002'
 
@@ -139,7 +139,7 @@ class CarrierSearchList extends Component {
                     });
                     console.log('PRE FETCH', newSearchData.origin);
                     if (newSearchData.origin === 'Z0' || newSearchData.origin === 'Z1') {
-                      this.fetchLoadsData(newSearchData.equipment, newSearchData.dateRange, newSearchData.age, newSearchData.origin);
+                      this.fetchLoadsData(newSearchData.equipment, newSearchData.dateRange, newSearchData.age, newSearchData.origin, newSearchData.destination);
                     } else {
                       this.fetchLoadsData(newSearchData.equipment, newSearchData.dateRange, newSearchData.age);
                     }
@@ -237,7 +237,7 @@ class CarrierSearchList extends Component {
                         searchResolved: true, // Set searchResolved to true
                         searchClickedIndex: index, // Set the clicked index
                     });
-                    this.fetchLoadsData(equipment, searchData.dateRange, searchData.age, searchData.origin);
+                    this.fetchLoadsData(equipment, searchData.dateRange, searchData.age, searchData.origin, searchData.destination);
                                     
                   } else {
                     // Handle update errors
@@ -263,7 +263,7 @@ class CarrierSearchList extends Component {
                         searchResolved: true, // Set searchResolved to true
                         searchClickedIndex: index, // Set the clicked index
                     });
-                    this.fetchLoadsData(equipment, searchData.dateRange, searchData.age, searchData.origin);                                  
+                    this.fetchLoadsData(equipment, searchData.dateRange, searchData.age, searchData.origin, searchData.destination);                                  
                   } else {
                     // Handle update errors
                     console.error('Error updating search entry:', response.statusText);
@@ -280,14 +280,15 @@ class CarrierSearchList extends Component {
 
     onEntryClick = (e, index, equipment) => {
         if (this.state.searches[index].searchClicked ) {
-            this.fetchLoadsData(equipment, this.state.searches[index].dateRange, this.state.searches[index].age);
+            this.fetchLoadsData(equipment, this.state.searches[index].dateRange, this.state.searches[index].age, this.state.searches[index].origin);
 
         } else{
             return
         }
     }
-    fetchLoadsData = async (tag, dateRange, age, locationCode) => {
-          console.log('fetchLoadsData', tag, dateRange, age, locationCode);
+    fetchLoadsData = async (tag, dateRange, age, locationCodeOrigin, locationCodeDestination) => {
+
+        // console.log('fetchLoadsData', tag, dateRange, age, locationCodeOrigin, locationCodeDestination);
       const Z0 = [
         { name: "Belize", abb: "BZ" },
         { name: "Canada", abb: "CA" },
@@ -335,22 +336,19 @@ class CarrierSearchList extends Component {
             ...result,
             date: formatDateString(result.date), // Replace 'date' with your actual date field
           }));
+          // console.log('formattedResults', formattedResults);
           const filteredResults = formattedResults.filter((result) => {
             if (dateRange) {
               const [startDateString, endDateString] = dateRange.split(' - ');
               const startDate = Date.parse(startDateString);
               const endDate = Date.parse(endDateString);
               const resultDate = Date.parse(result.date);
-              const stateAbbreviation = result.origin.slice(-2);
-              const isStateInZ0 = Z0.some((location) => location.abb === stateAbbreviation);
-              const isStateInZ1 = Z1.some((location) => location.abb === stateAbbreviation);
-    
-                  
+              
               if (
                 resultDate >= startDate &&
                 resultDate <= endDate &&
-                result.age <= age &&
-                ((locationCode === 'Z0' && isStateInZ0) || (locationCode === 'Z1' && isStateInZ1))
+                result.age <= age 
+                
               ) {
                 return true;
               }
@@ -359,9 +357,19 @@ class CarrierSearchList extends Component {
             return true; // Include all results if no date range is provided
     
           });
-    
-          console.log('filteredResults', filteredResults);
-    
+          
+          
+          // const refinedResults = filteredResults.filter((result) => {
+          //   if(Z0.some((location) => location.abb === result.origin.slice(-2)) && Z1.some((location) => location.abb === result.destination.slice(-2))) {
+          //     console.log('Z0  Z1 ORIGIN', result.origin.slice(-2));
+          //     return true;
+          //   } else if(Z0.some((location) => location.abb === result.destination.slice(-2)) && Z1.some((location) => location.abb === result.origin.slice(-2))) {
+          //     console.log('Z0  Z1 DESTINATION', result.destination.slice(-2));
+          //     return true;
+          //   }
+          // }); // Filter the results based on the origin and destination
+          // console.log(refinedResults, refinedResults.length)
+
           this.setState({
             results: filteredResults,
           });
@@ -518,7 +526,7 @@ class CarrierSearchList extends Component {
     }
 
 
-    onHandeDestinationChange = (newDestination, index) => {
+    onHandleDestinationChange = (newDestination, index) => {
       console.log('onHandeDestinationChange', newDestination, index); 
       //  Create a shallow copy of the searches array
         const newSearches = [...this.state.searches];
@@ -596,14 +604,16 @@ class CarrierSearchList extends Component {
                                         <input type='number' name='originDH' value={search.originDH} onChange={e => this.onChange(e, index)} disabled={search.searchClicked} />
 
                                         <AutoSuggestDropDownDestination
-                                          name='destination'
-                                          value={search.destination}
-                                          onChange={(e) => this.onChange(e, index)}
-                                          disabled={search.searchClicked}
-                                          onHandleDestinationChange={this.onHandeDestinationChange}
-                                          index={index}
-                                          destination={search.destination}
-                                        />  
+                                              name='destination'
+                                              value={search.destination}
+                                              onChange={(e) => this.onChange(e, index)}  
+                                              disabled={search.searchClicked}
+                                              onHandleDestinationChange={this.onHandleDestinationChange}
+                                              index={index}
+                                              destination={search.destination}
+                                          
+
+                                        />
                                         <input type='number' name='destinationDH' value={search.destinationDH} onChange={e => this.onChange(e, index)} disabled={search.searchClicked} />
                                         <select name="age" value={search.age} onChange={e => this.onChange(e, index)} disabled={search.searchClicked}>
                                             <option value='2'>2</option>

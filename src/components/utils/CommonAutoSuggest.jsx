@@ -1,47 +1,54 @@
 // CommonAutoSuggest.js
-import React, { Component } from 'react';
+
+import React from 'react';
 import Autosuggest from 'react-autosuggest';
 import axios from 'axios';
 
-const API_KEY = 'AIzaSyDdjMOgYAuUspOfs2tmKbDIGhiLHn2RbGI';
-const url = 'https://maps.googleapis.com/maps/api/geocode/json?address=';
+
+const API_KEY = 'AIzaSyDdjMOgYAuUspOfs2tmKbDIGhiLHn2RbGI'
+const url = 'https://maps.googleapis.com/maps/api/geocode/json?address='
+
 
 const getSuggestionValue = suggestion => suggestion.name;
-const renderSuggestion = suggestion => (
-  <div>
-    {suggestion.name}
-  </div>
-);
+const renderSuggestion = suggestion => <div>{suggestion.name}</div>;
 
-class CommonAutoSuggest extends Component {
+class CommonAutoSuggest extends React.Component {
   constructor() {
     super();
+
     this.state = {
       value: '',
-      suggestions: [],
+      suggestions: []
     };
   }
 
+
   onChange = (event, { newValue }) => {
     this.setState({
-      value: newValue,
+      value: newValue
     });
     this.props.onHandleChange(newValue, this.props.index);
+
+    // // Save the selected suggestion to local storage
+    // localStorage.setItem(`suggestion_${this.props.index}`, newValue);
   };
 
   fetchSuggestions = async (value) => {
     try {
       const response = await axios.get(`${url}${value}&key=${API_KEY}`);
+      console.log(response) 
       const suggestions = response.data.results.map((result) => ({
         name: result.formatted_address,
-      }));
-      suggestions.push({ name: 'Z0' });
-      suggestions.push({ name: 'Z1' });
-      this.setState({ suggestions });
+     }));
+
+     suggestions.push({ name: 'Z0' });
+     suggestions.push({ name: 'Z1' });
+
+     this.setState({ suggestions });
     } catch (error) {
       console.log(error);
     }
-  };
+  }; 
 
   onSuggestionsFetchRequested = ({ value }) => {
     this.fetchSuggestions(value);
@@ -49,19 +56,19 @@ class CommonAutoSuggest extends Component {
 
   onSuggestionsClearRequested = () => {
     this.setState({
-      suggestions: [],
+      suggestions: []
     });
   };
 
   render() {
-    const { suggestions, value } = this.state;
-    const { disabled, placeholder, index } = this.props;
+    const { suggestions,  } = this.state;
+    const { disabled, index, placeholder, value } = this.props;
 
     const inputProps = {
       placeholder,
       value,
       onChange: this.onChange,
-      disabled,
+      disabled
     };
 
     return (
