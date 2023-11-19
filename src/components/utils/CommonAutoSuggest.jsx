@@ -36,7 +36,6 @@ class CommonAutoSuggest extends React.Component {
   fetchSuggestions = async (value) => {
     try {
       const response = await axios.get(`${url}${value}&key=${API_KEY}`);
-      console.log(response) 
       const suggestions = response.data.results.map((result) => ({
         name: result.formatted_address,
      }));
