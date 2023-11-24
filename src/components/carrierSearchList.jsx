@@ -20,6 +20,8 @@ class CarrierSearchList extends Component {
             key: '',
             direction: 'ascending',
         },
+        selectedOriginGroup: false,
+        selectedDestinationGroup: false,
         results: [], //Results to display coming from the DB to the searchResults table
         placeholderText: new Date().toLocaleDateString(),
         filteredLoads: [], // Initialize an empty array to store filtered loads
@@ -80,6 +82,7 @@ class CarrierSearchList extends Component {
             createdAt : Date.now(),
 
         };
+        
         this.setState({
             isNewSearch: true, // Set isNewSearch to true
             searches: [...this.state.searches, newSearchData],
@@ -99,15 +102,15 @@ class CarrierSearchList extends Component {
         });
     }
     
-    onChange = (e, index) => {//e is the event, index is the index of the search in the searches array
-        e.preventDefault(); // Prevent form submission
-        const newSearches = this.state.searches.slice(); // Create a shallow copy of the searches array
-        newSearches[index][e.target.name] = e.target.value; // Update the value of the input field that changed
-        this.setState({
-          searches: newSearches,
-        });
-      }
-      
+   onChange = (e, index) => {//e is the event, index is the index of the search in the searches array
+          e.preventDefault(); // Prevent form submission
+          const newSearches = this.state.searches.slice(); // Create a shallow copy of the searches array
+          newSearches[index][e.target.name] = e.target.value; // Update the value of the input field that changed
+          this.setState({
+            searches: newSearches,
+          });
+        }
+        
     onSubmit = async (e, index, updateTag, id) => {
         e.preventDefault()
         console.log('onSubmit', this.state.searches[index]);
@@ -581,6 +584,10 @@ class CarrierSearchList extends Component {
         const newSearches = [...this.state.searches];
         // console.log('newSearches', newSearches[index]);
         newSearches[index].origin = newOrigin;
+        if(newOrigin === 'Z0' || newOrigin === 'Z1') {
+            this.setState({selectedOriginGroup: true})
+        }
+
 
         // // Update the 'origin' property of the active search
         // if (this.state.activeSearch) {
@@ -604,6 +611,9 @@ class CarrierSearchList extends Component {
         // if (this.state.activeSearch) {
         //   newSearches[index].origin = newOrigin;
         // }
+        if(newDestination === 'Z0' || newDestination === 'Z1') {  
+          this.setState({selectedDestinationGroup: true})
+        }
 
         this.setState({
           searches: newSearches,
@@ -668,7 +678,7 @@ class CarrierSearchList extends Component {
                                           index={index}
                                           origin={search.origin}
                                         />
-                                        <input type='number' name='originDH' value={search.originDH} onChange={e => this.onChange(e, index)} disabled={search.searchClicked} />
+                                        <input type='number' name='originDH' value={search.originDH} onChange={e => this.onChange(e, index)} disabled={search.searchClicked || this.state.selectedOriginGroup} />
 
                                         <AutoSuggestDropDownDestination
                                               name='destination'
@@ -681,7 +691,7 @@ class CarrierSearchList extends Component {
                                           
 
                                         />
-                                        <input type='number' name='destinationDH' value={search.destinationDH} onChange={e => this.onChange(e, index)} disabled={search.searchClicked} />
+                                        <input type='number' name='destinationDH' value={search.destinationDH} onChange={e => this.onChange(e, index)} disabled={search.searchClicked || this.state.selectedDestinationGroup} />
                                         <select name="age" value={search.age} onChange={e => this.onChange(e, index)} disabled={search.searchClicked}>
                                             <option value='2'>2</option>
                                             <option value='4'>4</option>
