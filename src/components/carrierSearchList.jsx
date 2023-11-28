@@ -8,6 +8,9 @@ import AutoSugestDropDown from './utils/AutoSugestDropDown';
 import AutoSuggestDropDownDestination from './utils/AutoSugestDropDownDestination';
 
 axios.defaults.baseURL = 'http://localhost:3002'
+// const API_KEY = 'AIzaSyDdjMOgYAuUspOfs2tmKbDIGhiLHn2RbGI'
+// const url = 'https://maps.googleapis.com/maps/api/geocode/json?address='
+
 
 class CarrierSearchList extends Component {
     state = { 
@@ -324,6 +327,7 @@ class CarrierSearchList extends Component {
            
         ]
       }
+    
       
       // Function to format a date string
       function formatDateString(dateString) {
@@ -412,6 +416,7 @@ class CarrierSearchList extends Component {
                     ///LOCATION CODE FILTER////
 
 
+
                     ///DATE RANGE FILTER///
 
           const filteredResults = formattedResults.filter((result) => {
@@ -437,8 +442,30 @@ class CarrierSearchList extends Component {
           });
                    ///DATE RANGE FILTER///
 
+            //DEAD HEAD FILTER//
+                  //ORIGIN DEAD HEAD FILTER//
+          try {
+            // console.log(axios.get(`/getOriginDH?origin=${index.origin}&destination=${filteredResults[23].origin}`));
+            for(let i = 0; i < filteredResults.length; i++) {
+              console.log('originDH', filteredResults[i].origin);
+              axios.get(`http://localhost:3002/getOriginDH?origin=${index.origin}&destination=${filteredResults[i].origin}`)
+              .then((response) => {
+                console.log('Response FOR: ', filteredResults[i].origin, response.data );
+                filteredResults[i].originDH = response.data.distance;
+                  ///WORKING HERE!!!! DISPLAY ONLY THE RESULTS WHERE THE DH IS LESS THAN originDH
+              })
+              
+            }
 
 
+          } catch (error) {
+            console.error('Error calculating distance:', error);
+          }
+
+
+   
+
+            //DEAD HEAD FILTER//
 
           this.setState({
             results: filteredResults, // Update the results state with the formatted results

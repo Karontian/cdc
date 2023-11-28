@@ -36,9 +36,22 @@ class CommonAutoSuggest extends React.Component {
   fetchSuggestions = async (value) => {
     try {
       const response = await axios.get(`${url}${value}&key=${API_KEY}`);
-      const suggestions = response.data.results.map((result) => ({
-        name: result.formatted_address,
-     }));
+      const suggestions = response.data.results.map((result) => {
+        // name: result.formatted_address,
+                  // Find the city, state and country in the address components
+          const cityObj = result.address_components.find(component => component.types.includes('locality'));
+          const stateObj = result.address_components.find(component => component.types.includes('administrative_area_level_1'));
+          const countryObj = result.address_components.find(component => component.types.includes('country'));
+          const city = cityObj ? cityObj.long_name : '';
+          const state = stateObj ? stateObj.long_name : '';
+          const country = countryObj ? countryObj.long_name : '';
+          // Format the suggestion name
+          return {
+            name: `${city}, ${state}, ${country}`,
+          };
+
+     });
+
 
      suggestions.push({ name: 'Z0' });
      suggestions.push({ name: 'Z1' });
@@ -59,6 +72,26 @@ class CommonAutoSuggest extends React.Component {
     });
   };
 
+  
+  onKeyDown = (event) => {
+  const { keyCode } = event;
+  const { suggestions } = this.state;
+
+  // Check if the Tab key was pressed
+  if (keyCode === 9 && suggestions.length > 0) {
+    // event.preventDefault(); // Prevent the default action
+    this.setState({ value: suggestions[0].name }); // Set the value to the first suggestion
+    this.props.onHandleChange(suggestions[0].name, this.props.index); // Update the parent component
+
+    // Move the focus to the next field
+    const nextField = document.querySelector('input[name="nextFieldName"]');
+    if (nextField) {
+      nextField.focus();
+    }
+  }
+};
+
+
   render() {
     const { suggestions,  } = this.state;
     const { disabled, index, placeholder, value } = this.props;
@@ -67,7 +100,9 @@ class CommonAutoSuggest extends React.Component {
       placeholder,
       value,
       onChange: this.onChange,
-      disabled
+      disabled,
+      onKeyDown: this.onKeyDown
+
     };
 
     return (
