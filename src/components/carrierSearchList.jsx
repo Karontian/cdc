@@ -270,7 +270,7 @@ class CarrierSearchList extends Component {
                         searchResolved: true, // Set searchResolved to true
                         searchClickedIndex: index, // Set the clicked index
                     });
-                    this.fetchLoadsData(equipment, searchData.dateRange, searchData.age, searchData.origin, searchData.destination);                                  
+                    this.fetchLoadsData(equipment, searchData.dateRange, searchData.age, this.state.searches[index]);                                  
                   } else {
                     // Handle update errors
                     console.error('Error updating search entry:', response.statusText);
@@ -294,6 +294,10 @@ class CarrierSearchList extends Component {
             return
         }
     }
+
+
+
+
     fetchLoadsData = async (tag, dateRange, age, index) => {
       console.log('fetchLoadsData', tag, dateRange, age, index);
 
@@ -328,7 +332,6 @@ class CarrierSearchList extends Component {
         ]
       }
     
-      
       // Function to format a date string
       function formatDateString(dateString) {
         const dateParts = dateString.split('T');
@@ -338,9 +341,11 @@ class CarrierSearchList extends Component {
           return dateString; // Use the original string if 'T' is not found
         }
       }
-
       let originLocationGroup = false
-      let destinationLocationGroup = false    
+      let destinationLocationGroup = false 
+      
+      
+
         // Send a GET request to fetch loads matching the provided tag
       axios.get(`/loads?equipment=${tag}`)
         .then((response) => {
@@ -373,8 +378,6 @@ class CarrierSearchList extends Component {
             console.log('Filtered results for destination:', destinationLGresults, 'DESTINATION LG SELECTED', destinationLocationGroup);
             formattedResults = destinationLGresults;
           }
-
-
 
           if (originLocationGroup === true && destinationLocationGroup === true) {
             console.log('Both origin and destination location groups selected');
@@ -413,13 +416,11 @@ class CarrierSearchList extends Component {
               }
 
           }
-                    ///LOCATION CODE FILTER////
+          ///LOCATION CODE FILTER////
 
+           ///DATE RANGE FILTER///
 
-
-                    ///DATE RANGE FILTER///
-
-          const filteredResults = formattedResults.filter((result) => {
+          let filteredResults = formattedResults.filter((result) => {
             if (dateRange) {
               const [startDateString, endDateString] = dateRange.split(' - ');
               const startDate = Date.parse(startDateString);
@@ -440,30 +441,126 @@ class CarrierSearchList extends Component {
             return true; // Include all results if no date range is provided
     
           });
-                   ///DATE RANGE FILTER///
+          ///DATE RANGE FILTER///
 
             //DEAD HEAD FILTER//
-                  //ORIGIN DEAD HEAD FILTER//
-          try {
-            // console.log(axios.get(`/getOriginDH?origin=${index.origin}&destination=${filteredResults[23].origin}`));
-            for(let i = 0; i < filteredResults.length; i++) {
-              console.log('originDH', filteredResults[i].origin);
-              axios.get(`http://localhost:3002/getOriginDH?origin=${index.origin}&destination=${filteredResults[i].origin}`)
-              .then((response) => {
-                console.log('Response FOR: ', filteredResults[i].origin, response.data );
-                filteredResults[i].originDH = response.data.distance;
-                  ///WORKING HERE!!!! DISPLAY ONLY THE RESULTS WHERE THE DH IS LESS THAN originDH
-              })
-              
-            }
+                              //API CALL TO GOOGLE MAPS DISTANCE MATRIX API
+               
+                      // try {
+                      //   const fetchDistance = async (origin, destination) => {
+                      //     try {
+                      //       const response = await axios.get(`http://localhost:3002/distanceMeter?origin=${origin}&destination=${destination}`);
+                            
+                      //       if (response.data && response.data.response && response.data.response.distance) {
+                      //         return parseInt(response.data.response.distance.text.replace(/,/g, ''));
+                      //       } else {
+                      //         console.error('Invalid response format:', response.data);
+                      //         return null; // Handle the error accordingly
+                      //       }
+                      //     } catch (error) {
+                      //       console.error('Error fetching distance data:', error);
+                      //       return null; // Handle the error accordingly
+                      //     }
+                      //   };
+                        
+                      //         //GENERAELIZE THE FETCH FUNCTIONS
+                      //         const fetchDistanceInfo = async (property, location) => {
+                      //           let promiseArray = [];
+                                
+                      //           for (let i = 0; i < filteredResults.length; i++) {
+                      //             console.log(`${property}DH`, filteredResults[i][`${property}DH`]);
+                                  
+                      //             // Push each axios promise to the array
+                      //             promiseArray.push(
+                      //               fetchDistance(index[property], filteredResults[i][location])
+                      //                 .then((distance) => {
+                      //                   // Update filteredResults[i] with distance information
+                      //                   filteredResults[i][`${property}DH`] = distance;
+                      //                 })
+                      //             );
+                      //           }
+                            
+                      //           // Use Promise.all to wait for all promises to resolve
+                      //           await Promise.all(promiseArray);
+                            
+                      //           console.log(`Updated ${property}DH in filteredResults`, filteredResults);
+                      //           return filteredResults;
+                      //         };
+                              
 
 
-          } catch (error) {
-            console.error('Error calculating distance:', error);
-          }
+                     
+                      // } catch (error) {
+                      //   console.error(error);
+                      // }
+                      const dhsFetch = async () => {
+                        try {
+                          const fetchDistance = async (origin, destination) => {
+                            try {
+                              const response = await axios.get(`http://localhost:3002/distanceMeter?origin=${origin}&destination=${destination}`);
+                              
+                              if (response.data && response.data.response && response.data.response.distance) {
+                                return parseInt(response.data.response.distance.text.replace(/,/g, ''));
+                              } else {
+                                console.error('Invalid response format:', response.data);
+                                return null; // Handle the error accordingly
+                              }
+                            } catch (error) {
+                              console.error('Error fetching distance data:', error);
+                              return null; // Handle the error accordingly
+                            }
+                          };
+                          
+                          // GENERAELIZE THE FETCH FUNCTIONS
+                          const fetchDistanceInfo = async (property, location) => {
+                            let promiseArray = [];
+                            
+                            for (let i = 0; i < filteredResults.length; i++) {
+                              console.log(`${property}DH`, filteredResults[i][`${property}DH`]);
+                              
+                              // Push each axios promise to the array
+                              promiseArray.push(
+                                fetchDistance(index[property], filteredResults[i][location])
+                                  .then((distance) => {
+                                    // Update filteredResults[i] with distance information
+                                    filteredResults[i][`${property}DH`] = distance;
+                                  })
+                              );
+                              const origin = filteredResults[i].origin;
+                              const destination = filteredResults[i].destination;
+                              const distanceToDestination = await fetchDistance(origin, destination);
+                              filteredResults[i].distance = distanceToDestination;
+    
+                            }
+                            
+                            
+                            // Use Promise.all to wait for all promises to resolve
+                            await Promise.all(promiseArray);
+                            
+                            console.log(`Updated ${property}DH in filteredResults`, filteredResults);
+                            return filteredResults;
+                          };
+                          
+                          await fetchDistanceInfo('origin', 'origin');
+                          await fetchDistanceInfo('destination', 'destination');
+                          
+                          // await Promise.all(promiseArray);
 
-
-   
+                          console.log('Updated DH in filteredResults', filteredResults);
+                      
+                          // Update the state with the filtered results
+                          this.setState({
+                            results: filteredResults,
+                          });
+                      
+                        } catch (error) {
+                          console.error(error);
+                        }
+                      };
+                      
+                      // Call the function
+                      dhsFetch();
+                      
 
             //DEAD HEAD FILTER//
 
@@ -825,7 +922,7 @@ class CarrierSearchList extends Component {
                                             <td>{result.origin}</td>
                                             <td>{result.destinationDH}</td>
                                             <td>{result.destination}</td>
-                                            <td>{result.miles}</td>
+                                            <td>{result.distance}</td>
                                             <td>{result.company}</td>
                                             <td>{result.contact}</td>
                                             <td>{result.length}</td>
