@@ -446,53 +446,7 @@ class CarrierSearchList extends Component {
             //DEAD HEAD FILTER//
                               //API CALL TO GOOGLE MAPS DISTANCE MATRIX API
                
-                      // try {
-                      //   const fetchDistance = async (origin, destination) => {
-                      //     try {
-                      //       const response = await axios.get(`http://localhost:3002/distanceMeter?origin=${origin}&destination=${destination}`);
-                            
-                      //       if (response.data && response.data.response && response.data.response.distance) {
-                      //         return parseInt(response.data.response.distance.text.replace(/,/g, ''));
-                      //       } else {
-                      //         console.error('Invalid response format:', response.data);
-                      //         return null; // Handle the error accordingly
-                      //       }
-                      //     } catch (error) {
-                      //       console.error('Error fetching distance data:', error);
-                      //       return null; // Handle the error accordingly
-                      //     }
-                      //   };
-                        
-                      //         //GENERAELIZE THE FETCH FUNCTIONS
-                      //         const fetchDistanceInfo = async (property, location) => {
-                      //           let promiseArray = [];
-                                
-                      //           for (let i = 0; i < filteredResults.length; i++) {
-                      //             console.log(`${property}DH`, filteredResults[i][`${property}DH`]);
-                                  
-                      //             // Push each axios promise to the array
-                      //             promiseArray.push(
-                      //               fetchDistance(index[property], filteredResults[i][location])
-                      //                 .then((distance) => {
-                      //                   // Update filteredResults[i] with distance information
-                      //                   filteredResults[i][`${property}DH`] = distance;
-                      //                 })
-                      //             );
-                      //           }
-                            
-                      //           // Use Promise.all to wait for all promises to resolve
-                      //           await Promise.all(promiseArray);
-                            
-                      //           console.log(`Updated ${property}DH in filteredResults`, filteredResults);
-                      //           return filteredResults;
-                      //         };
-                              
-
-
-                     
-                      // } catch (error) {
-                      //   console.error(error);
-                      // }
+                    
                       const dhsFetch = async () => {
                         try {
                           const fetchDistance = async (origin, destination) => {
@@ -511,6 +465,7 @@ class CarrierSearchList extends Component {
                             }
                           };
                           
+
                           // GENERAELIZE THE FETCH FUNCTIONS
                           const fetchDistanceInfo = async (property, location) => {
                             let promiseArray = [];
@@ -526,10 +481,10 @@ class CarrierSearchList extends Component {
                                     filteredResults[i][`${property}DH`] = distance;
                                   })
                               );
-                              const origin = filteredResults[i].origin;
-                              const destination = filteredResults[i].destination;
-                              const distanceToDestination = await fetchDistance(origin, destination);
-                              filteredResults[i].distance = distanceToDestination;
+                              // const origin = filteredResults[i].origin;
+                              // const destination = filteredResults[i].destination;
+                              // const distanceToDestination = await fetchDistance(origin, destination);
+                              // filteredResults[i].distance = distanceToDestination;
     
                             }
                             
@@ -540,17 +495,32 @@ class CarrierSearchList extends Component {
                             console.log(`Updated ${property}DH in filteredResults`, filteredResults);
                             return filteredResults;
                           };
-                          
-                          await fetchDistanceInfo('origin', 'origin');
-                          await fetchDistanceInfo('destination', 'destination');
-                          
-                          // await Promise.all(promiseArray);
+
+                          // await fetchDistanceInfo('origin', 'origin');
+                          // await fetchDistanceInfo('destination', 'destination');
+                          await Promise.all([
+                            fetchDistanceInfo('origin', 'origin', formattedResults),
+                            fetchDistanceInfo('destination', 'destination', formattedResults),
+                          ]);
+
+                          for (let i = 0; i < filteredResults.length; i++) {
+                            const origin = filteredResults[i].origin;
+                            const destination = filteredResults[i].destination;
+                            const distanceToDestination = await fetchDistance(origin, destination);
+                            filteredResults[i].distance = distanceToDestination;
+                          }
 
                           console.log('Updated DH in filteredResults', filteredResults);
+
+                          const filteredDHResults = filteredResults.filter((result) => {
+                            console.log('result', result);
+                            return result.originDH < index.originDH && result.destinationDH < index.destinationDH;
+                          });
+                          
                       
                           // Update the state with the filtered results
                           this.setState({
-                            results: filteredResults,
+                            results: filteredDHResults,
                           });
                       
                         } catch (error) {
@@ -560,13 +530,24 @@ class CarrierSearchList extends Component {
                       
                       // Call the function
                       dhsFetch();
+                      //FILTER BY DH 
                       
+                      // filteredResults = filteredResults.filter((result) => {
+                      //     if(result.originDH <= index.originDH && result.destinationDH <= index.destinationDH) {
+                      //       console.log('DH FILTERED', result)
+                      //       return true;
+                      //     }
+
+                      // });
+
+                      //FILTER BY DH 
+
 
             //DEAD HEAD FILTER//
 
-          this.setState({
-            results: filteredResults, // Update the results state with the formatted results
-          });
+          // this.setState({
+          //   results: filteredResults, // Update the results state with the formatted results
+          // });
         })
         .catch((error) => {
           console.error('Error fetching data:', error);
