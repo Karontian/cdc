@@ -6,6 +6,7 @@ import 'react-date-range/dist/styles.css'; // Import styles
 import 'react-date-range/dist/theme/default.css'; // Import theme styles
 import AutoSugestDropDown from './utils/AutoSugestDropDown';
 import AutoSuggestDropDownDestination from './utils/AutoSugestDropDownDestination';
+import LoadingSpinner from './utils/loadingSpinner';
 
 axios.defaults.baseURL = 'http://localhost:3002'
 // const API_KEY = 'AIzaSyDdjMOgYAuUspOfs2tmKbDIGhiLHn2RbGI'
@@ -48,6 +49,7 @@ class CarrierSearchList extends Component {
         searchResolved: true, // This is a flag to indicate if the search has been resolved or not
         searchClickedIndex: null, // This is the index of the search that was clicked
         entryClick: false, // This is a flag to indicate if a search entry was clicked,
+        isLoading: false, // Add a loading state for the spinner
         
     } 
 
@@ -132,12 +134,14 @@ class CarrierSearchList extends Component {
                     
                  newSearchData.searchClicked = true; // Set searchClicked to true
                 try {
+
                   // Make a POST request to your server using Axios
                   const response = await axios.post('/newSearch', newSearchData);
             
                   if (response.status === 201) {
                     // Handle success, e.g., show a success message or reset the form              
                     this.setState({
+                      isLoading : false, // Set loading state to false
                       searchResolved: true, // Set searchResolved to true
                       searchClickedIndex: index, // Set the clicked index
                       activeSearch: newSearchData,
@@ -156,6 +160,7 @@ class CarrierSearchList extends Component {
                   }
                 } catch (error) {
                   console.error('Error:', error);
+                  this.setState({ isLoading: false }); // Set loading state to false
                 }
               } 
 
@@ -295,11 +300,10 @@ class CarrierSearchList extends Component {
         }
     }
 
-
-
-
     fetchLoadsData = async (tag, dateRange, age, index) => {
       console.log('fetchLoadsData', tag, dateRange, age, index);
+      this.setState({ isLoading: true }); // Set loading to true before the API call
+
 
       const locationGroup =  {
         Z0 :[
@@ -446,7 +450,6 @@ class CarrierSearchList extends Component {
             //DEAD HEAD FILTER//
                               //API CALL TO GOOGLE MAPS DISTANCE MATRIX API
                
-                    
                       const dhsFetch = async () => {
                         try {
                           const fetchDistance = async (origin, destination) => {
@@ -481,11 +484,6 @@ class CarrierSearchList extends Component {
                                     filteredResults[i][`${property}DH`] = distance;
                                   })
                               );
-                              // const origin = filteredResults[i].origin;
-                              // const destination = filteredResults[i].destination;
-                              // const distanceToDestination = await fetchDistance(origin, destination);
-                              // filteredResults[i].distance = distanceToDestination;
-    
                             }
                             
                             
@@ -496,8 +494,6 @@ class CarrierSearchList extends Component {
                             return filteredResults;
                           };
 
-                          // await fetchDistanceInfo('origin', 'origin');
-                          // await fetchDistanceInfo('destination', 'destination');
                           await Promise.all([
                             fetchDistanceInfo('origin', 'origin', formattedResults),
                             fetchDistanceInfo('destination', 'destination', formattedResults),
@@ -516,38 +512,35 @@ class CarrierSearchList extends Component {
                             console.log('result', result);
                             return result.originDH < index.originDH && result.destinationDH < index.destinationDH;
                           });
-                          
+
+
+                          // const filteredDHResults = filteredResults.filter((result) => {
+                          //   // Check if both originDH and destinationDH are defined and not null
+                          //   if (result.originDH !== null && result.destinationDH !== null) {
+                          //     return result.originDH < index.originDH && result.destinationDH < index.destinationDH;
+                          //   }
+                          //   // If either originDH or destinationDH is missing, exclude the result
+                          //   return false;
+                          // });
+                                                    
                       
                           // Update the state with the filtered results
                           this.setState({
                             results: filteredDHResults,
+                            isLoading: false, // Set loading to false after the API call is complete
+
                           });
                       
                         } catch (error) {
                           console.error(error);
+                          this.setState({ isLoading: false }); // Set loading to false in case of an error
+
                         }
                       };
                       
                       // Call the function
                       dhsFetch();
-                      //FILTER BY DH 
-                      
-                      // filteredResults = filteredResults.filter((result) => {
-                      //     if(result.originDH <= index.originDH && result.destinationDH <= index.destinationDH) {
-                      //       console.log('DH FILTERED', result)
-                      //       return true;
-                      //     }
-
-                      // });
-
-                      //FILTER BY DH 
-
-
-            //DEAD HEAD FILTER//
-
-          // this.setState({
-          //   results: filteredResults, // Update the results state with the formatted results
-          // });
+        
         })
         .catch((error) => {
           console.error('Error fetching data:', error);
@@ -684,21 +677,13 @@ class CarrierSearchList extends Component {
   }
   
     onHandleOriginChange = (newOrigin, index) => {
-      // console.log('onHandleOriginChange', newOrigin, index); 
-      //  Create a shallow copy of the searches array
         const newSearches = [...this.state.searches];
-        // console.log('newSearches', newSearches[index]);
         newSearches[index].origin = newOrigin;
         if(newOrigin === 'Z0' || newOrigin === 'Z1') {
             this.setState({selectedOriginGroup: true})
+        } else {
+          this.setState({selectedOriginGroup: false})
         }
-
-
-        // // Update the 'origin' property of the active search
-        // if (this.state.activeSearch) {
-        //   newSearches[index].origin = newOrigin;
-        // }
-
         this.setState({
           searches: newSearches,
         });
@@ -706,18 +691,12 @@ class CarrierSearchList extends Component {
 
 
     onHandleDestinationChange = (newDestination, index) => {
-      // console.log('onHandeDestinationChange', newDestination, index); 
-      //  Create a shallow copy of the searches array
         const newSearches = [...this.state.searches];
-        // console.log('newSearches', newSearches[index]);
         newSearches[index].destination = newDestination;
-
-        // // Update the 'origin' property of the active search
-        // if (this.state.activeSearch) {
-        //   newSearches[index].origin = newOrigin;
-        // }
         if(newDestination === 'Z0' || newDestination === 'Z1') {  
           this.setState({selectedDestinationGroup: true})
+        } else {
+          this.setState({selectedDestinationGroup: false})
         }
 
         this.setState({
@@ -783,7 +762,10 @@ class CarrierSearchList extends Component {
                                           index={index}
                                           origin={search.origin}
                                         />
-                                        <input type='number' name='originDH' value={search.originDH} onChange={e => this.onChange(e, index)} disabled={search.searchClicked || this.state.selectedOriginGroup} />
+                                        <input type='number' name='originDH' 
+                                        value={search.originDH  > 100 ? 100 : search.originDH} 
+                                        onChange={e => this.onChange(e, index)} 
+                                        disabled={search.searchClicked || this.state.selectedOriginGroup} />
 
                                         <AutoSuggestDropDownDestination
                                               name='destination'
@@ -796,7 +778,14 @@ class CarrierSearchList extends Component {
                                           
 
                                         />
-                                        <input type='number' name='destinationDH' value={search.destinationDH} onChange={e => this.onChange(e, index)} disabled={search.searchClicked || this.state.selectedDestinationGroup} />
+                                        <input type='number' name='destinationDH' 
+                                        value={search.destinationDH > 100 ? 100 : search.destinationDH} 
+                                        onChange={e => this.onChange(e, index)} 
+                                        disabled={search.searchClicked || this.state.selectedDestinationGroup} />
+                                       
+                                       
+                                       
+                                       
                                         <select name="age" value={search.age} onChange={e => this.onChange(e, index)} disabled={search.searchClicked}>
                                             <option value='2'>2</option>
                                             <option value='4'>4</option>
@@ -868,54 +857,59 @@ class CarrierSearchList extends Component {
                 </div>
 
                 <div id='resultList'>
-                    <h1>Search Results</h1>
-                    {this.state.results.length === 0 ? (
-                            <p> 0 results in DB!!</p>
-                        ) : (   
-                          <div>
-                            <p>{this.state.results.length} results in DB!!</p>
-                            <table className="table">
-                               <thead>
-                                    <tr>
-                                        <th scope="col" onClick={() => this.onHandleSorting('Age')}>Age</th>
-                                        <th scope="col" onClick={() => this.onHandleSorting('Date')}>Date</th>
-                                        <th scope="col" onClick={() => this.onHandleSorting('Equipment')}>Equipment</th>
-                                        <th scope="col" onClick={() => this.onHandleSorting('Origin DH')}>Origin DH</th>
-                                        <th scope="col" onClick={() => this.onHandleSorting('Origin')}>Origin</th>
-                                        <th scope="col" onClick={() => this.onHandleSorting('Destination DH')}>Destination DH</th>
-                                        <th scope="col" onClick={() => this.onHandleSorting('Destination')}>Destination</th>
-                                        <th scope="col" onClick={() => this.onHandleSorting('Miles')}>Miles</th>
-                                        <th scope="col" onClick={() => this.onHandleSorting('Company')}>Company</th>
-                                        <th scope="col" onClick={() => this.onHandleSorting('Contact')}>Contact</th>
-                                        <th scope="col" onClick={() => this.onHandleSorting('Length')}>Length</th>
-                                        <th scope="col" onClick={() => this.onHandleSorting('Weight')}>Weight</th>
-                                        <th scope="col" onClick={() => this.onHandleSorting('Rate')}>Rate</th>
-                                        
-                                    </tr>
+                        <h1>Search Results</h1>
+                        {this.state.isLoading ? (
+                          <LoadingSpinner/>
+                        ) : (
+                          this.state.results.length === 0 ? (
+                            <p> Please create or Select a search!!</p>
+                          ) : (   
+                            <div>
+                              <p>{this.state.results.length} results in DB!!</p>
+                              <table className="table">
+                                <thead>
+                                  <tr>
+                                    <th scope="col" onClick={() => this.onHandleSorting('Age')}>Age</th>
+                                    <th scope="col" onClick={() => this.onHandleSorting('Date')}>Date</th>
+                                    <th scope="col" onClick={() => this.onHandleSorting('Equipment')}>Equipment</th>
+                                    <th scope="col" onClick={() => this.onHandleSorting('Origin DH')}>Origin DH</th>
+                                    <th scope="col" onClick={() => this.onHandleSorting('Origin')}>Origin</th>
+                                    <th scope="col" onClick={() => this.onHandleSorting('Destination DH')}>Destination DH</th>
+                                    <th scope="col" onClick={() => this.onHandleSorting('Destination')}>Destination</th>
+                                    <th scope="col" onClick={() => this.onHandleSorting('Miles')}>Miles</th>
+                                    <th scope="col" onClick={() => this.onHandleSorting('Company')}>Company</th>
+                                    <th scope="col" onClick={() => this.onHandleSorting('Contact')}>Contact</th>
+                                    <th scope="col" onClick={() => this.onHandleSorting('Length')}>Length</th>
+                                    <th scope="col" onClick={() => this.onHandleSorting('Weight')}>Weight</th>
+                                    <th scope="col" onClick={() => this.onHandleSorting('Rate')}>Rate</th>
+                                  </tr>
                                 </thead>
                                 <tbody>
-                                    {this.state.results.map((result, index) => (
-                                        <tr key={index}>
-                                            <td>{result.age}</td>
-                                            <td>{result.date}</td>
-                                            <td>{result.equipment}</td>
-                                            <td>{result.originDH}</td>
-                                            <td>{result.origin}</td>
-                                            <td>{result.destinationDH}</td>
-                                            <td>{result.destination}</td>
-                                            <td>{result.distance}</td>
-                                            <td>{result.company}</td>
-                                            <td>{result.contact}</td>
-                                            <td>{result.length}</td>
-                                            <td>{result.weight}</td>
-                                            <td>${result.rate}</td>
-                                        </tr>
-                                    ))}
+                                  {this.state.results.map((result, index) => (
+                                    <tr key={index}>
+                                      <td>{result.age}</td>
+                                      <td>{result.date}</td>
+                                      <td>{result.equipment}</td>
+                                      <td>{result.originDH}</td>
+                                      <td>{result.origin}</td>
+                                      <td>{result.destinationDH}</td>
+                                      <td>{result.destination}</td>
+                                      <td>{result.distance}</td>
+                                      <td>{result.company}</td>
+                                      <td>{result.contact}</td>
+                                      <td>{result.length}</td>
+                                      <td>{result.weight}</td>
+                                      <td>${result.rate}</td>
+                                    </tr>
+                                  ))}
                                 </tbody>
-                            </table>
-                          </div>
+                              </table>
+                            </div>
+                          )
                         )}
-                </div>
+                      </div>
+
+                
             </div>
         );
     }
