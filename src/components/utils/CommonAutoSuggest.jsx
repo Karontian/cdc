@@ -105,6 +105,7 @@ class CommonAutoSuggest extends React.Component {
 
     };
 
+
     return (
       <Autosuggest
         index={index}

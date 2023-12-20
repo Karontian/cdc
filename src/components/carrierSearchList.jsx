@@ -118,7 +118,7 @@ class CarrierSearchList extends Component {
         
     onSubmit = async (e, index, updateTag, id) => {
         e.preventDefault()
-        console.log('onSubmit', this.state.searches[index]);
+        // console.log('onSubmit', this.state.searches[index]);
         
         if (index >= 0 && index < this.state.searches.length) {
                 const newSearchData = this.state.searches[index];
@@ -146,7 +146,7 @@ class CarrierSearchList extends Component {
                       searchClickedIndex: index, // Set the clicked index
                       activeSearch: newSearchData,
                     });
-                    console.log('onSubmit', newSearchData);
+                    // console.log('onSubmit', newSearchData);
 
                      this.fetchLoadsData(newSearchData.equipment, newSearchData.dateRange, newSearchData.age, this.state.searches[index]);
 
@@ -338,209 +338,289 @@ class CarrierSearchList extends Component {
     
       // Function to format a date string
       function formatDateString(dateString) {
-        const dateParts = dateString.split('T');
-        if (dateParts.length >= 1) {
-          return dateParts[0].replace(/-/g, '/'); // Get the date part before 'T'
-        } else {
-          return dateString; // Use the original string if 'T' is not found
-        }
+        // console.log('formatDateString', dateString);
+        // const dateParts = dateString.split('T');
+        // if (dateParts.length >= 1) {
+        //   return dateParts[0].replace(/-/g, '/'); // Get the date part before 'T'
+        // } else {
+        //   return dateString; // Use the original string if 'T' is not found
+        // }
+        console.log('formatDateString', dateString);
+        const date = new Date(dateString);
+        const year = date.getFullYear();
+        const month = String(date.getMonth() + 1).padStart(2, '0'); // Months are 0-indexed in JavaScript
+        const day = String(date.getDate()).padStart(2, '0');
+        console.log('formatDateString', `${month}/${day}/${year}`);
+        return `${month}/${day}/${year}`;
+            
       }
       let originLocationGroup = false
       let destinationLocationGroup = false 
       
-      
+      //date Formating before server call
+      function formatDates(dateRange) {
+        const [start, end] = dateRange.split(' - ');
+        const [startMonth, startDay, startYear] = start.split('/');
+        const [endMonth, endDay, endYear] = end.split('/');
+        const startDateString = `${startYear}-${startMonth.padStart(2, '0')}-${startDay.padStart(2, '0')}`;
+        const endDateString = `${endYear}-${endMonth.padStart(2, '0')}-${endDay.padStart(2, '0')}`;
+        return [startDateString, endDateString];
+        }
 
+        const [startDateString, endDateString] = formatDates(dateRange);
+        console.log('startDateString', startDateString, 'endDateString', endDateString);
         // Send a GET request to fetch loads matching the provided tag
-      axios.get(`/loads?equipment=${tag}`)
-        .then((response) => {
-          // Format the date strings in the response data
-          let formattedResults = response.data.map((result) => ({
-            ...result,
-            date: formatDateString(result.date), // Replace 'date' with your actual date field
-          }));
+        axios.get(`/loads?equipment=${tag}&startDate=${startDateString}&endDate=${endDateString}`)
+  
+  
+  
+        // .then((response) => { //WORKING OUTDATED CODE
+        //   console.log('response', response.data);
+        //   // Format the date strings in the response data
+        //   let formattedResults = response.data.map((result) => ({
+        //     ...result,
+        //     date: formatDateString(result.date), // Replace 'date' with your actual date field
+        //   }));
 
-
-          ///LOCATION CODE FILTER////
-          if (index.origin === 'Z0' || index.origin === 'Z1') {
-            console.log('Location code detected in origin:', index.origin);
-            originLocationGroup = true;
-            const originLGresults = formattedResults.filter((result) => {
-              return locationGroup[index.origin].some((location) => location.abb === result.origin.slice(-2));
-            });
+        //   console.log('formattedResults', formattedResults);
+        //   ///LOCATION CODE FILTER////
+        //   if (index.origin === 'Z0' || index.origin === 'Z1') {
+        //     // console.log('Location code detected in origin:', index.origin);
+        //     originLocationGroup = true;
+        //     const originLGresults = formattedResults.filter((result) => {
+        //       return locationGroup[index.origin].some((location) => location.abb === result.origin.slice(-2));
+        //     });
       
-            console.log('Filtered results for origin:', originLGresults,'ORIGIN LG SELECTED', originLocationGroup);
-            formattedResults = originLGresults;
-          }
+        //     // console.log('Filtered results for origin:', originLGresults,'ORIGIN LG SELECTED', originLocationGroup);
+        //     formattedResults = originLGresults;
+        //   }
       
-          if (index.destination === 'Z0' || index.destination === 'Z1') {
-            console.log('Location code detected in destination:', index.destination);
-            destinationLocationGroup = true;
-            const destinationLGresults = formattedResults.filter((result) => {
-              return locationGroup[index.destination].some((location) => location.abb === result.destination.slice(-2));
-            });
+        //   if (index.destination === 'Z0' || index.destination === 'Z1') {
+        //     // console.log('Location code detected in destination:', index.destination);
+        //     destinationLocationGroup = true;
+        //     const destinationLGresults = formattedResults.filter((result) => {
+        //       return locationGroup[index.destination].some((location) => location.abb === result.destination.slice(-2));
+        //     });
       
-            console.log('Filtered results for destination:', destinationLGresults, 'DESTINATION LG SELECTED', destinationLocationGroup);
-            formattedResults = destinationLGresults;
-          }
+        //     // console.log('Filtered results for destination:', destinationLGresults, 'DESTINATION LG SELECTED', destinationLocationGroup);
+        //     formattedResults = destinationLGresults;
+        //   }
 
-          if (originLocationGroup === true && destinationLocationGroup === true) {
-            console.log('Both origin and destination location groups selected');
-              if (index.origin === index.destination) {
-                console.log('intraZone');
-                let intraZone = formattedResults.filter((result) => {
-                  const originGroup = locationGroup[index.origin];
-                  const destinationGroup = locationGroup[index.destination];
+        //   if (originLocationGroup === true && destinationLocationGroup === true) {
+        //     // console.log('Both origin and destination location groups selected');
+        //       if (index.origin === index.destination) {
+        //         // console.log('intraZone');
+        //         let intraZone = formattedResults.filter((result) => {
+        //           const originGroup = locationGroup[index.origin];
+        //           const destinationGroup = locationGroup[index.destination];
 
-                  return (
-                    originGroup.some((location) => location.abb === result.origin.slice(-2)) &&
-                    destinationGroup.some((location) => location.abb === result.destination.slice(-2))
-                  )
-                });
+        //           return (
+        //             originGroup.some((location) => location.abb === result.origin.slice(-2)) &&
+        //             destinationGroup.some((location) => location.abb === result.destination.slice(-2))
+        //           )
+        //         });
 
 
 
-                console.log('intraZone', intraZone);
-                formattedResults = intraZone;
+        //         // console.log('intraZone', intraZone);
+        //         formattedResults = intraZone;
     
 
-              } else if (index.origin !== index.destination) {
-                console.log('interZone');
-                let interZone = formattedResults.filter((result) => {
-                  const originGroup = locationGroup[index.origin];
-                  const destinationGroup = locationGroup[index.destination];
+        //       } else if (index.origin !== index.destination) {
+        //         // console.log('interZone');
+        //         let interZone = formattedResults.filter((result) => {
+        //           const originGroup = locationGroup[index.origin];
+        //           const destinationGroup = locationGroup[index.destination];
 
-                  return (
-                    originGroup.some((location) => location.abb === result.origin.slice(-2)) &&
-                    destinationGroup.some((location) => location.abb === result.destination.slice(-2))
-                  )
-                });
-                console.log('interZonee', interZone);
-                formattedResults = interZone;
+        //           return (
+        //             originGroup.some((location) => location.abb === result.origin.slice(-2)) &&
+        //             destinationGroup.some((location) => location.abb === result.destination.slice(-2))
+        //           )
+        //         });
+        //         // console.log('interZonee', interZone);
+        //         formattedResults = interZone;
 
-              }
+        //       }
 
-          }
-          ///LOCATION CODE FILTER////
+        //   }
+        //   ///LOCATION CODE FILTER////
 
-           ///DATE RANGE FILTER///
+        //    ///DATE RANGE FILTER///
 
-          let filteredResults = formattedResults.filter((result) => {
-            if (dateRange) {
-              const [startDateString, endDateString] = dateRange.split(' - ');
-              const startDate = Date.parse(startDateString);
-              const endDate = Date.parse(endDateString);
-              const resultDate = Date.parse(result.date);
+        //   let filteredResults = formattedResults.filter((result) => {
+        //     if (dateRange) {
+        //       const [startDateString, endDateString] = dateRange.split(' - ');
+        //       console.log('startDateString', startDateString, 'endDateString', endDateString);
+        //       const startDate = Date.parse(startDateString);
+        //       const endDate = Date.parse(endDateString);
+        //       const resultDate = Date.parse(result.date); 
+        //       // const startDate = moment(startDateString, 'YYYY/MM/DD');
+        //       // const endDate = moment(endDateString, 'YYYY/MM/DD');
+        //       // const resultDate = moment(result.date, 'YYYY/MM/DD');
+          
+        //       // console.log('startDate', startDate, 'endDate', endDate, 'resultDate', resultDate);
                 
-              if (
-                resultDate >= startDate &&
-                resultDate <= endDate &&
-                result.age <= age 
-                
-              ) {                
+        //       if (
+        //         resultDate >= startDate &&
+        //         resultDate <= endDate &&
+        //         result.age <= age 
+        //         // resultDate.isSameOrAfter(startDate) &&
+        //         // resultDate.isSameOrBefore(endDate) &&
+        //         // result.age <= age 
+                          
+        //       ) {                
 
-              return true;
-              }
-              return false;
-            }
-            return true; // Include all results if no date range is provided
+        //       return true;
+        //       }
+        //       return false;
+        //     }
+        //     return true; // Include all results if no date range is provided
     
-          });
-          ///DATE RANGE FILTER///
+        //   });
+        //   // let filteredResults = formattedResults.filter((result) => {
+        //   //   if (dateRange) {
+        //   //     const [startDateString, endDateString] = dateRange.split(' - ');
+        //   //     const startDate = moment(startDateString, 'YYYY/MM/DD');
+        //   //     const endDate = moment(endDateString, 'YYYY/MM/DD');
+        //   //     const resultDate = moment(result.date, 'YYYY/MM/DD');
+                
+        //   //     console.log('startDate', startDate);
+        //   //     console.log('endDate', endDate);
+        //   //     console.log('resultDate', resultDate);
+        //   //     console.log('result.age', result.age);
+          
+        //   //     if (
+        //   //       resultDate.isSameOrAfter(startDate) &&
+        //   //       resultDate.isSameOrBefore(endDate) &&
+        //   //       result.age <= age 
+        //   //     ) {                
+        //   //       return true;
+        //   //     }
+        //   //     return false;
+        //   //   }
+        //   //   return true; // Include all results if no date range is provided
+        //   // });
+        //   // let filteredResults = formattedResults.filter((result) => {
+        //   //     if(dateRange){
+        //   //       const [startDateString, endDateString] = dateRange.split(' - ');
+        //   //       const resultDate = result.date;
+        //   //       console.log('startDateString', startDateString, 'endDateString', endDateString, 'resultDate', resultDate);
+        //   //           if (resultDate >= startDateString && resultDate <= endDateString && result.age <= age) {
+        //   //             return true
+        //   //           }
+                
+        //   //       return true
+        //   //     }
 
-            //DEAD HEAD FILTER//
-                              //API CALL TO GOOGLE MAPS DISTANCE MATRIX API
+
+        //   // });
+        //   console.log('filteredResults', filteredResults);
+        //   ///DATE RANGE FILTER///
+
+        //     //DEAD HEAD FILTER//
+        //                       //API CALL TO GOOGLE MAPS DISTANCE MATRIX API
                
-                      const dhsFetch = async () => {
-                        try {
-                          const fetchDistance = async (origin, destination) => {
-                            try {
-                              const response = await axios.get(`http://localhost:3002/distanceMeter?origin=${origin}&destination=${destination}`);
+        //               const dhsFetch = async () => {
+        //                 try {
+        //                   const fetchDistance = async (origin, destination) => {
+        //                     try {
+        //                       const response = await axios.get(`http://localhost:3002/distanceMeter?origin=${origin}&destination=${destination}`);
                               
-                              if (response.data && response.data.response && response.data.response.distance) {
-                                return parseInt(response.data.response.distance.text.replace(/,/g, ''));
-                              } else {
-                                console.error('Invalid response format:', response.data);
-                                return null; // Handle the error accordingly
-                              }
-                            } catch (error) {
-                              console.error('Error fetching distance data:', error);
-                              return null; // Handle the error accordingly
-                            }
-                          };
+        //                       if (response.data && response.data.response && response.data.response.distance) {
+        //                         return parseInt(response.data.response.distance.text.replace(/,/g, ''));
+        //                       } else {
+        //                         // console.error('Invalid response format:', response.data);
+        //                         return null; // Handle the error accordingly
+        //                       }
+        //                     } catch (error) {
+        //                       // console.error('Error fetching distance data:', error);
+        //                       return null; // Handle the error accordingly
+        //                     }
+        //                   };
                           
 
-                          // GENERAELIZE THE FETCH FUNCTIONS
-                          const fetchDistanceInfo = async (property, location) => {
-                            let promiseArray = [];
+        //                   // GENERAELIZE THE FETCH FUNCTIONS
+        //                   const fetchDistanceInfo = async (property, location) => {
+        //                     let promiseArray = [];
                             
-                            for (let i = 0; i < filteredResults.length; i++) {
-                              console.log(`${property}DH`, filteredResults[i][`${property}DH`]);
+        //                     for (let i = 0; i < filteredResults.length; i++) {
+        //                       // console.log(`${property}DH`, filteredResults[i][`${property}DH`]);
                               
-                              // Push each axios promise to the array
-                              promiseArray.push(
-                                fetchDistance(index[property], filteredResults[i][location])
-                                  .then((distance) => {
-                                    // Update filteredResults[i] with distance information
-                                    filteredResults[i][`${property}DH`] = distance;
-                                  })
-                              );
-                            }
+        //                       // Push each axios promise to the array
+        //                       promiseArray.push(
+        //                         fetchDistance(index[property], filteredResults[i][location])
+        //                           .then((distance) => {
+        //                             // Update filteredResults[i] with distance information
+        //                             filteredResults[i][`${property}DH`] = distance;
+        //                           })
+        //                       );
+        //                     }
                             
                             
-                            // Use Promise.all to wait for all promises to resolve
-                            await Promise.all(promiseArray);
+        //                     // Use Promise.all to wait for all promises to resolve
+        //                     await Promise.all(promiseArray);
                             
-                            console.log(`Updated ${property}DH in filteredResults`, filteredResults);
-                            return filteredResults;
-                          };
+        //                     // console.log(`Updated ${property}DH in filteredResults`, filteredResults);
+        //                     return filteredResults;
+        //                   };
 
-                          await Promise.all([
-                            fetchDistanceInfo('origin', 'origin', formattedResults),
-                            fetchDistanceInfo('destination', 'destination', formattedResults),
-                          ]);
+        //                   await Promise.all([
+        //                     fetchDistanceInfo('origin', 'origin', formattedResults),
+        //                     fetchDistanceInfo('destination', 'destination', formattedResults),
+        //                   ]);
 
-                          for (let i = 0; i < filteredResults.length; i++) {
-                            const origin = filteredResults[i].origin;
-                            const destination = filteredResults[i].destination;
-                            const distanceToDestination = await fetchDistance(origin, destination);
-                            filteredResults[i].distance = distanceToDestination;
-                          }
+        //                   for (let i = 0; i < filteredResults.length; i++) {
+        //                     const origin = filteredResults[i].origin;
+        //                     const destination = filteredResults[i].destination;
+        //                     const distanceToDestination = await fetchDistance(origin, destination);
+        //                     filteredResults[i].distance = distanceToDestination;
+        //                   }
 
-                          console.log('Updated DH in filteredResults', filteredResults);
+        //                   // console.log('Updated DH in filteredResults', filteredResults);
 
-                          const filteredDHResults = filteredResults.filter((result) => {
-                            console.log('result', result);
-                            return result.originDH < index.originDH && result.destinationDH < index.destinationDH;
-                          });
+        //                   const filteredDHResults = filteredResults.filter((result) => {
+        //                     // console.log('result', result);
+        //                     return result.originDH < index.originDH && result.destinationDH < index.destinationDH;
+        //                   });
 
 
-                          // const filteredDHResults = filteredResults.filter((result) => {
-                          //   // Check if both originDH and destinationDH are defined and not null
-                          //   if (result.originDH !== null && result.destinationDH !== null) {
-                          //     return result.originDH < index.originDH && result.destinationDH < index.destinationDH;
-                          //   }
-                          //   // If either originDH or destinationDH is missing, exclude the result
-                          //   return false;
-                          // });
+        //                   // const filteredDHResults = filteredResults.filter((result) => {
+        //                   //   // Check if both originDH and destinationDH are defined and not null
+        //                   //   if (result.originDH !== null && result.destinationDH !== null) {
+        //                   //     return result.originDH < index.originDH && result.destinationDH < index.destinationDH;
+        //                   //   }
+        //                   //   // If either originDH or destinationDH is missing, exclude the result
+        //                   //   return false;
+        //                   // });
                                                     
                       
-                          // Update the state with the filtered results
-                          this.setState({
-                            results: filteredDHResults,
-                            isLoading: false, // Set loading to false after the API call is complete
+        //                   // Update the state with the filtered results
+        //                   this.setState({
+        //                     results: filteredDHResults,
+        //                     isLoading: false, // Set loading to false after the API call is complete
 
-                          });
+        //                   });
                       
-                        } catch (error) {
-                          console.error(error);
-                          this.setState({ isLoading: false }); // Set loading to false in case of an error
+        //                 } catch (error) {
+        //                   console.error(error);
+        //                   this.setState({ isLoading: false }); // Set loading to false in case of an error
 
-                        }
-                      };
+        //                 }
+        //               };
                       
-                      // Call the function
-                      dhsFetch();
+        //               // Call the function
+        //               dhsFetch();
         
+        // })
+
+
+        .then((response) => { //WORKING HERE!!!! WORKING HERE!!!
+          //-Make a MUST that there is a startDate and endDate,
+          // IF NOT when a user leavs NO end date on the datepicker range errors occur when rendering, 
+          //instead of figuring out the inner working of it, make the user do a double click to set forcly 
+          //a start and an end date (CURRENT)
+          console.log('response', response.data);
+
         })
         .catch((error) => {
           console.error('Error fetching data:', error);
