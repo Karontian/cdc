@@ -55,6 +55,10 @@ class CommonAutoSuggest extends React.Component {
 
      suggestions.push({ name: 'Z0' });
      suggestions.push({ name: 'Z1' });
+     suggestions.push({ name: 'Z2' });
+     suggestions.push({ name: 'Z3' });
+
+
 
      this.setState({ suggestions });
     } catch (error) {

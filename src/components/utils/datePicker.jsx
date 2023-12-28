@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState} from 'react';
 import DatePicker from 'react-datepicker';
 import 'react-datepicker/dist/react-datepicker.css';
 
@@ -9,6 +9,7 @@ const DateRange = (props) => {
   const [endDate, setEndDate] = useState(
     props.dateRange ? new Date(props.dateRange.split(' - ')[1]) : null
   );
+
 
   const onChange = (dates) => {
     const [start, end] = dates;
