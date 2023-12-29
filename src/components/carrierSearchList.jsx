@@ -396,27 +396,23 @@ class CarrierSearchList extends Component {
           { name: "Quebec", abb: "QC, CA" },
           { name: "Saskatchewan", abb: "SK, CA" },
           { name: "Yukon", abb: "YT, CA" }
-        ]
+        ],
+        Z4 : [
+          { name: "Bahamas", abb: "BS" },
+          { name: "Barbados", abb: "BB" },
+          { name: "Cuba", abb: "CU" },
+          { name: "Dominican Republic", abb: "DO" },
+          { name: "Haiti", abb: "HT" },
+          { name: "Jamaica", abb: "JM" },
+          { name: "Trinidad and Tobago", abb: "TT" },
+          { name: "Saint Lucia", abb: "LC" },
+          { name: "Saint Vincent and the Grenadines", abb: "VC" },
+          { name: "Grenada", abb: "GD" },
+          { name: "Antigua and Barbuda", abb: "AG" },
+          { name: "Saint Kitts and Nevis", abb: "KN" }
+      ]
       }
     
-      // Function to format a date string
-      // function formatDateString(dateString) {
-      //   // console.log('formatDateString', dateString);
-      //   // const dateParts = dateString.split('T');
-      //   // if (dateParts.length >= 1) {
-      //   //   return dateParts[0].replace(/-/g, '/'); // Get the date part before 'T'
-      //   // } else {
-      //   //   return dateString; // Use the original string if 'T' is not found
-      //   // }
-      //   console.log('formatDateString', dateString);
-      //   const date = new Date(dateString);
-      //   const year = date.getFullYear();
-      //   const month = String(date.getMonth() + 1).padStart(2, '0'); // Months are 0-indexed in JavaScript
-      //   const day = String(date.getDate()).padStart(2, '0');
-      //   console.log('formatDateString', `${month}/${day}/${year}`);
-      //   return `${month}/${day}/${year}`;
-            
-      // }
 
       let originLocationGroup = false
       let destinationLocationGroup = false 
@@ -436,8 +432,127 @@ class CarrierSearchList extends Component {
         // Send a GET request to fetch loads matching the provided tag
         axios.get(`/loads?equipment=${tag}&startDate=${startDateString}&endDate=${endDateString}`)
   
-  
-  
+       
+        .then((response) => { 
+          console.log('response', response.data);
+          let dateFilteredResults = response.data
+
+                       // ***** LOCATION CODE FILTER *****///
+
+
+                // Check if location group exists and filter results
+              
+                if (locationGroup.hasOwnProperty(index.origin)) {
+                  console.log('Location code detected in origin:', index.origin);
+                  originLocationGroup = true;
+                  let originLGresults
+                      if(index.origin === 'Z2' || index.origin === 'Z3'){
+                        console.log('Z2 detected in origin:', index.origin);
+                         originLGresults = dateFilteredResults.filter((result) => {
+                          return locationGroup[index.origin].some((location) => location.abb === result.origin.slice(-6));
+                        })  
+                      } else {
+                         originLGresults = dateFilteredResults.filter((result) => {
+                        return locationGroup[index.origin].some((location) => location.abb === result.origin.slice(-2));
+                  });
+                }
+
+                  if (originLGresults.length === 0) {
+                    console.log('No matching results for origin location group:', index.origin);
+                  }
+
+                  dateFilteredResults = originLGresults;
+
+                } else if (index.origin !== undefined) {
+                  console.log('Invalid location group at origin:', index.origin);
+                }
+
+
+
+                // Repeat the same checks for destination
+              if (locationGroup.hasOwnProperty(index.destination)) {
+                console.log('Location code detected in destination:', index.destination);
+                destinationLocationGroup = true;
+                let destinationLGresults; // Declare destinationLGresults here
+
+                if(index.destination === 'Z2' || index.destination === 'Z3'){
+                  console.log('Z2 detected in destination:', index.destination);
+                  destinationLGresults = dateFilteredResults.filter((result) => {
+                    console.log('result.destination', result.destination.slice(-6));
+                    return locationGroup[index.destination].some((location) => location.abb === result.destination.slice(-6));
+                  })  
+                } else {
+                  destinationLGresults = dateFilteredResults.filter((result) => {
+                    return locationGroup[index.destination].some((location) => location.abb === result.destination.slice(-2));
+                  });
+                }
+
+                if (destinationLGresults.length === 0) {
+                  console.log('No matching results for destination location group:', index.destination);
+                }
+
+                dateFilteredResults = destinationLGresults;
+              } else if (index.destination !== undefined) {
+                console.log('Invalid location group at destination:', index.destination);
+              }
+
+
+          if (originLocationGroup === true && destinationLocationGroup === true) {
+            console.log('Both origin and destination location groups selected');
+             
+            
+            if (index.origin === index.destination) {
+                console.log('intraZone', dateFilteredResults);
+                let intraZone = dateFilteredResults.filter((result) => {
+                  const originGroup = locationGroup[index.origin];
+                  const destinationGroup = locationGroup[index.destination];
+                  const sliceLength = index.origin === 'Z2' || index.origin === 'Z3' ? -6 : -2;
+
+
+                  return (
+                    originGroup.some((location) => location.abb === result.origin.slice(sliceLength)) &&
+                    destinationGroup.some((location) => location.abb === result.destination.slice(sliceLength))
+                  )
+                });
+
+                // console.log('intraZone', intraZone);
+                dateFilteredResults = intraZone;
+    
+              } else if (index.origin !== index.destination) { //INTERZONE searches are not allowed by the API, restricting for now
+                console.log('interZone, NOT ALLOWED BY API RESTRICT USE AFTER TESTING');
+                let interZone = dateFilteredResults.filter((result) => {
+                  const originGroup = locationGroup[index.origin];
+                  const destinationGroup = locationGroup[index.destination];
+                  const sliceLengthOrigin = index.origin === 'Z2' || index.origin === 'Z3' ? -6 : -2;
+                  const sliceLengthDestination = index.destination === 'Z2' || index.destination === 'Z3' ? -6 : -2;
+              
+                  
+
+                  return (
+                    originGroup.some((location) => location.abb === result.origin.slice(sliceLengthOrigin)) &&
+                    destinationGroup.some((location) => location.abb === result.destination.slice(sliceLengthDestination))
+                  )
+                });
+                // console.log('interZonee', interZone);
+                dateFilteredResults = interZone;
+
+              }
+
+          }
+
+
+          let locationGroupFilter = dateFilteredResults
+                       // ***** LOCATION CODE FILTER *****///
+          console.log('locationGroupFilter', locationGroupFilter);
+
+                      //*** DEAD HEAD FILTER***//
+                      
+
+//WORKGIN HERE !!! WORKING HERE !!! WORKING HERE !!!  WORKING HERE !!! WORKING HERE !!! WORKING HERE !!! WORKING HERE !!!
+//WORKGIN HERE !!! WORKING HERE !!! WORKING HERE !!!  WORKING HERE !!! WORKING HERE !!! WORKING HERE !!! WORKING HERE !!!
+
+                      //*** DEAD HEAD FILTER***//
+
         // .then((response) => { //WORKING OUTDATED CODE
         //   console.log('response', response.data);
         //   // Format the date strings in the response data
@@ -678,145 +793,6 @@ class CarrierSearchList extends Component {
         //               dhsFetch();
         
         // })
-
-
-        .then((response) => { 
-          console.log('response', response.data);
-          let dateFilteredResults = response.data
-
-                       // ***** LOCATION CODE FILTER *****///
-
-
-                // Check if location group exists and filter results
-              
-                if (locationGroup.hasOwnProperty(index.origin)) {
-                  console.log('Location code detected in origin:', index.origin);
-                  originLocationGroup = true;
-                  let originLGresults
-                      if(index.origin === 'Z2' || index.origin === 'Z3'){
-                        console.log('Z2 detected in origin:', index.origin);
-                         originLGresults = dateFilteredResults.filter((result) => {
-                          return locationGroup[index.origin].some((location) => location.abb === result.origin.slice(-6));
-                        })  
-                      } else {
-                         originLGresults = dateFilteredResults.filter((result) => {
-                        return locationGroup[index.origin].some((location) => location.abb === result.origin.slice(-2));
-                  });
-                }
-
-                  if (originLGresults.length === 0) {
-                    console.log('No matching results for origin location group:', index.origin);
-                  }
-
-                  dateFilteredResults = originLGresults;
-
-                } else if (index.origin !== undefined) {
-                  console.log('Invalid location group at origin:', index.origin);
-                }
-
-
-
-                // Repeat the same checks for destination
-              if (locationGroup.hasOwnProperty(index.destination)) {
-                console.log('Location code detected in destination:', index.destination);
-                destinationLocationGroup = true;
-                let destinationLGresults; // Declare destinationLGresults here
-
-                if(index.destination === 'Z2' || index.destination === 'Z3'){
-                  console.log('Z2 detected in destination:', index.destination);
-                  destinationLGresults = dateFilteredResults.filter((result) => {
-                    console.log('result.destination', result.destination.slice(-6));
-                    return locationGroup[index.destination].some((location) => location.abb === result.destination.slice(-6));
-                  })  
-                } else {
-                  destinationLGresults = dateFilteredResults.filter((result) => {
-                    return locationGroup[index.destination].some((location) => location.abb === result.destination.slice(-2));
-                  });
-                }
-
-                if (destinationLGresults.length === 0) {
-                  console.log('No matching results for destination location group:', index.destination);
-                }
-
-                dateFilteredResults = destinationLGresults;
-              } else if (index.destination !== undefined) {
-                console.log('Invalid location group at destination:', index.destination);
-              }
-
-                 //   if (index.origin === 'Z0' || index.origin === 'Z1') { // CHANGE AFTER TO SOMETHING MORE PROGRAMATICAL
-          //   console.log('Location code detected in origin:', index.origin);
-          //   originLocationGroup = true;
-          //   const originLGresults = dateFilteredResults.filter((result) => {
-          //     return locationGroup[index.origin].some((location) => location.abb === result.origin.slice(-2));
-          //   });
-      
-          //   // console.log('Filtered results for origin:', originLGresults,'ORIGIN LG SELECTED', originLocationGroup);
-          //   dateFilteredResults = originLGresults;
-          // }
-      
-          // if (index.destination === 'Z0' || index.destination === 'Z1') {
-          //   // console.log('Location code detected in destination:', index.destination);
-          //   destinationLocationGroup = true;
-          //   const destinationLGresults = dateFilteredResults.filter((result) => {
-          //     return locationGroup[index.destination].some((location) => location.abb === result.destination.slice(-2));
-          //   });
-      
-          //   // console.log('Filtered results for destination:', destinationLGresults, 'DESTINATION LG SELECTED', destinationLocationGroup);
-          //   dateFilteredResults = destinationLGresults;
-          // 
-         
-         
-         
-         
-          ///**WORKING HERE !! WORKING HERE !! WORKING HERE */
-
-                //  ADDING locationGroups... US Z2, CA Z3
-                // -added location groupos Z2 and Z3
-                // -city to Z2 WORKING
-                // -city to Z3 WORKING
-                // -Z2 to city WORKING
-                // -Z3 to city WORKING 
-                // -INTERZONE Z2 / Z3 NOT WORKING (CURRENT)
-
-          ///**WORKING HERE !! WORKING HERE !! WORKING HERE */
-
-          if (originLocationGroup === true && destinationLocationGroup === true) {
-            // console.log('Both origin and destination location groups selected');
-              if (index.origin === index.destination) {
-                // console.log('intraZone');
-                let intraZone = dateFilteredResults.filter((result) => {
-                  const originGroup = locationGroup[index.origin];
-                  const destinationGroup = locationGroup[index.destination];
-
-                  return (
-                    originGroup.some((location) => location.abb === result.origin.slice(-2)) &&
-                    destinationGroup.some((location) => location.abb === result.destination.slice(-2))
-                  )
-                });
-
-                // console.log('intraZone', intraZone);
-                dateFilteredResults = intraZone;
-    
-              } else if (index.origin !== index.destination) { //INTERZONE searches are not allowed by the API, restricting for now
-                // console.log('interZone, NOT ALLOWED BY API RESTRICT USE AFTER TESTING');
-                let interZone = dateFilteredResults.filter((result) => {
-                  const originGroup = locationGroup[index.origin];
-                  const destinationGroup = locationGroup[index.destination];
-
-                  return (
-                    originGroup.some((location) => location.abb === result.origin.slice(-2)) &&
-                    destinationGroup.some((location) => location.abb === result.destination.slice(-2))
-                  )
-                });
-                // console.log('interZonee', interZone);
-                dateFilteredResults = interZone;
-
-              }
-
-          }
-          let locationGroupFilter = dateFilteredResults
-                       // ***** LOCATION CODE FILTER *****///
-          console.log('locationGroupFilter', locationGroupFilter);
 
 
 
