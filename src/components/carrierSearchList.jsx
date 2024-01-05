@@ -517,7 +517,6 @@ class CarrierSearchList extends Component {
                 let dateFilteredResults = response.data
 
                        // ***** COUNTRY FILTER *****///
-   //WORKGIN HERE !!! WORKING HERE !!! WORKING HERE !!!  WORKING HERE !!! WORKING HERE !!! WORKING HERE !!! WORKING HERE !!!
                  console.log('dateFilteredResults', dateFilteredResults, index.origin, index.destination);
                  let countryCodeOrigins = [];
                  let locationGroupArray = [].concat(...Object.values(locationGroup).map(group => group.map(country => country.abb.slice(-2))));
@@ -526,14 +525,16 @@ class CarrierSearchList extends Component {
                     let originCountry = dateFilteredResults[i].origin.slice(-2);
 
                       if(dateFilteredResults[i].origin.slice(-2) === 'US' || dateFilteredResults[i].origin.slice(-2) === 'CA')  {
-                          // console.log('originCountry', originCountry, index.origin.slice(-2));
-                              if(originCountry === index.origin.slice(-2)) {
+   //WORKGIN HERE !!! WORKING HERE !!! WORKING HERE !!!  WORKING HERE !!! WORKING HERE !!! WORKING HERE !!! WORKING HERE !!!
+                          //NEED THE PROGRAM TO DISTINGUISH AND FILTER BY STATE WHEN US AND CA
+                             if(originCountry === index.origin.slice(-2)) {
                                 // console.log('MATCH', originCountry, index.origin.slice(-2));
                                 countryCodeOrigins.push(dateFilteredResults[i]);  
                               }
+  //WORKGIN HERE !!! WORKING HERE !!! WORKING HERE !!!  WORKING HERE !!! WORKING HERE !!! WORKING HERE !!! WORKING HERE !!!
 
                       } else  if(locationGroupArray.includes(index.origin.slice(-2))) {
-                        console.log('locationGroupArray', locationGroupArray, index.origin.slice(-2));
+                        // console.log('locationGroupArray', locationGroupArray, index.origin.slice(-2));
                         if(originCountry === index.origin.slice(-2)) {
                           // console.log('MATCH', originCountry, index.origin.slice(-2));
                           countryCodeOrigins.push(dateFilteredResults[i]);  
@@ -541,8 +542,8 @@ class CarrierSearchList extends Component {
                     }
                  }
                  console.log('countryCodeOrigins', countryCodeOrigins);
+                //  dateFilteredResults = countryCodeOrigins;
 
-  //WORKGIN HERE !!! WORKING HERE !!! WORKING HERE !!!  WORKING HERE !!! WORKING HERE !!! WORKING HERE !!! WORKING HERE !!!
                       // ***** COUNTRY FILTER *****///
 
 
@@ -634,9 +635,8 @@ class CarrierSearchList extends Component {
 
                       //*** DEAD HEAD FILTER***//
         //MAIN FUNCTION DONE ALREADY WORKING AND TESTING WITH MAPBOX... SCROLL UP TO SEE IT                      
-
-//WORKGIN HERE !!! WORKING HERE !!! WORKING HERE !!!  WORKING HERE !!! WORKING HERE !!! WORKING HERE !!! WORKING HERE !!!
-//WORKGIN HERE !!! WORKING HERE !!! WORKING HERE !!!  WORKING HERE !!! WORKING HERE !!! WORKING HERE !!! WORKING HERE !!!
+        // tripCalculator(index.origin , locationGroupFilter);
+      
                     //*** DEAD HEAD FILTER***//
 
           // tripCalculator( index.origin , locationGroupFilter);

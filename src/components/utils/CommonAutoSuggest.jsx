@@ -91,7 +91,10 @@ class CommonAutoSuggest extends React.Component {
      suggestions.push({ name: 'CR' });
      suggestions.push({ name: 'SV' });
      suggestions.push({ name: 'AR' });
+     suggestions.push({ name: 'HN' });
      suggestions.push({ name: 'NY, US'});
+     suggestions.push({ name: 'ON, CA'});
+
 
 
 
