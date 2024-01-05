@@ -8,6 +8,10 @@ import axios from 'axios';
 const API_KEY = 'AIzaSyDdjMOgYAuUspOfs2tmKbDIGhiLHn2RbGI'
 const url = 'https://maps.googleapis.com/maps/api/geocode/json?address='
 
+const MAPBOX_API_KEY = 'pk.eyJ1Ijoia2Fyb250aWFucGNoIiwiYSI6ImNscXJhdGJiMDNoeWQyaXBocnJrd2F3cDQifQ.VCSEjiblfirsksTM7WNOHQ'
+const MAPBOX_URL = 'https://api.mapbox.com/geocoding/v5/mapbox.places/';
+
+
 
 const getSuggestionValue = suggestion => suggestion.name;
 const renderSuggestion = suggestion => <div>{suggestion.name}</div>;
@@ -21,8 +25,6 @@ class CommonAutoSuggest extends React.Component {
       suggestions: []
     };
   }
-
-
   onChange = (event, { newValue }) => {
     this.setState({
       value: newValue
@@ -33,7 +35,7 @@ class CommonAutoSuggest extends React.Component {
     // localStorage.setItem(`suggestion_${this.props.index}`, newValue);
   };
 
-  fetchSuggestions = async (value) => {
+  fetchSuggestions = async (value) => { ///GOOGLE API
     try {
       const response = await axios.get(`${url}${value}&key=${API_KEY}`);
       const suggestions = response.data.results.map((result) => {
@@ -52,6 +54,8 @@ class CommonAutoSuggest extends React.Component {
 
      });
 
+   
+
 
      suggestions.push({ name: 'Z0' });
      suggestions.push({ name: 'Z1' });
@@ -65,10 +69,41 @@ class CommonAutoSuggest extends React.Component {
     } catch (error) {
       console.log(error);
     }
-  }; 
 
-  onSuggestionsFetchRequested = ({ value }) => {
-    this.fetchSuggestions(value);
+
+  }; 
+  fetchSuggestionsMapbox = async (value) => { ///MAPBOX API
+    try {
+      const response = await axios.get(`${MAPBOX_URL}${encodeURIComponent(value)}.json?access_token=${MAPBOX_API_KEY}`);
+      const suggestions = response.data.features.map((feature) => {
+        return {
+          name: feature.place_name,
+        };
+      });
+
+      
+
+     suggestions.push({ name: 'Z0' });
+     suggestions.push({ name: 'Z1' });
+     suggestions.push({ name: 'Z2' });
+     suggestions.push({ name: 'Z3' });
+     suggestions.push({ name: 'Z4' });
+     suggestions.push({ name: 'CR' });
+     suggestions.push({ name: 'SV' });
+     suggestions.push({ name: 'AR' });
+     suggestions.push({ name: 'NY, US'});
+
+
+
+
+      this.setState({ suggestions });
+    } catch (error) {
+      console.log(error);
+    }
+    };
+
+  onSuggestionsFetchRequested = ({ value }) => { 
+    this.fetchSuggestionsMapbox(value);
   };
 
   onSuggestionsClearRequested = () => {

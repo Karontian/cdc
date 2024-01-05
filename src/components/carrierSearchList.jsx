@@ -11,6 +11,10 @@ import LoadingSpinner from './utils/loadingSpinner';
 axios.defaults.baseURL = 'http://localhost:3002'
 // const API_KEY = 'AIzaSyDdjMOgYAuUspOfs2tmKbDIGhiLHn2RbGI'
 // const url = 'https://maps.googleapis.com/maps/api/geocode/json?address='
+const MAPBOX_API_KEY = 'pk.eyJ1Ijoia2Fyb250aWFucGNoIiwiYSI6ImNscXJhdGJiMDNoeWQyaXBocnJrd2F3cDQifQ.VCSEjiblfirsksTM7WNOHQ';
+const MAPBOX_GEOCODING_URL = 'https://api.mapbox.com/geocoding/v5/mapbox.places/';
+const MAPBOX_DIRECTIONS_URL = 'https://api.mapbox.com/directions/v5/mapbox/driving/';
+
 
 
 class CarrierSearchList extends Component {
@@ -410,13 +414,16 @@ class CarrierSearchList extends Component {
           { name: "Grenada", abb: "GD" },
           { name: "Antigua and Barbuda", abb: "AG" },
           { name: "Saint Kitts and Nevis", abb: "KN" }
-      ]
+        ],
+
       }
     
 
       let originLocationGroup = false
       let destinationLocationGroup = false 
       
+
+
       //date Formating before server call
       function formatDates(dateRange) {
         const [start, end] = dateRange.split(' - ');
@@ -426,59 +433,148 @@ class CarrierSearchList extends Component {
         const endDateString = `${endYear}-${endMonth.padStart(2, '0')}-${endDay.padStart(2, '0')}`;
         return [startDateString, endDateString];
         }
+      //Trip Calculation   MAPBOX API MAPBOX API
+   
+      // async function tripCalculator(origin, destination) {
+      //   console.log('tripCalculator', origin, destination);
+      
+      //   try {
+      //     // Geocode the origin and destination
+      //     const originResponse = await axios.get(`${MAPBOX_GEOCODING_URL}${encodeURIComponent(origin)}.json?access_token=${MAPBOX_API_KEY}`);
+      //     const destinationResponse = await axios.get(`${MAPBOX_GEOCODING_URL}${encodeURIComponent(destination)}.json?access_token=${MAPBOX_API_KEY}`);
+      
+      //     const originCoordinates = originResponse.data.features[0].center.join(',');
+      //     const destinationCoordinates = destinationResponse.data.features[0].center.join(',');
+      
+      //     // Calculate the trip
+      //     const directionsResponse = await axios.get(`${MAPBOX_DIRECTIONS_URL}${originCoordinates};${destinationCoordinates}.json?access_token=${MAPBOX_API_KEY}`);
+      //     const data = directionsResponse.data;
+      //               // The distance of the trip in meters
+      //         const distanceMeters = data.routes[0].distance;
+
+      //         // The duration of the trip in seconds
+      //         const durationSeconds = data.routes[0].duration;
+
+      //         // Convert distance to kilometers (1 meter = 0.001 kilometers)
+      //         const distanceKilometers = distanceMeters * 0.001;
+
+      //         // Convert duration to hours (1 second = 0.000277778 hours)
+      //         const durationHours = durationSeconds * 0.000277778;
+
+      //         console.log('Distance:', distanceKilometers, 'kmts');
+      //         console.log('Duration:', durationHours, 'hours');
+      //   } catch (error) {
+      //     console.error('Error:', error);
+      //   }
+      // }
+      async function tripCalculator(origin, destinations) {
+        console.log('tripCalculator', origin, destinations);
+      
+        try {
+          // Geocode the origin
+          const originResponse = await axios.get(`${MAPBOX_GEOCODING_URL}${encodeURIComponent(origin)}.json?access_token=${MAPBOX_API_KEY}`);
+          const originCoordinates = originResponse.data.features[0].center.join(',');
+      
+          for (let i = 0; i < destinations.length; i++) {
+            const destination = destinations[i].origin;
+      
+            // Geocode the destination
+            const destinationResponse = await axios.get(`${MAPBOX_GEOCODING_URL}${encodeURIComponent(destination)}.json?access_token=${MAPBOX_API_KEY}`);
+            const destinationCoordinates = destinationResponse.data.features[0].center.join(',');
+      
+            // Calculate the trip
+            const directionsResponse = await axios.get(`${MAPBOX_DIRECTIONS_URL}${originCoordinates};${destinationCoordinates}.json?access_token=${MAPBOX_API_KEY}`);
+            const data = directionsResponse.data;
+            // console.log('data', data);
+      
+            // The distance of the trip in meters
+            const distanceMeters = data.routes[0].distance;
+      
+            // The duration of the trip in seconds
+            const durationSeconds = data.routes[0].duration;
+      
+            // Convert distance to kilometers (1 meter = 0.001 kilometers)
+            const distanceKilometers = distanceMeters * 0.001;
+      
+            // Convert duration to hours (1 second = 0.000277778 hours)
+            const durationHours = durationSeconds * 0.000277778;
+      
+            console.log(`Trip ${i + 1}:`);
+            console.log('Distance:', distanceKilometers, 'kmts');
+            console.log('Duration:', durationHours, 'hours');
+          }
+        } catch (error) {
+          console.error('Error:', error);
+        }
+      }
+
 
         const [startDateString, endDateString] = formatDates(dateRange);
-        console.log('startDateString', startDateString, 'endDateString', endDateString);
         // Send a GET request to fetch loads matching the provided tag
         axios.get(`/loads?equipment=${tag}&startDate=${startDateString}&endDate=${endDateString}`)
   
-       
         .then((response) => { 
-          console.log('response', response.data);
-          let dateFilteredResults = response.data
+                let dateFilteredResults = response.data
+
+                       // ***** COUNTRY FILTER *****///
+   //WORKGIN HERE !!! WORKING HERE !!! WORKING HERE !!!  WORKING HERE !!! WORKING HERE !!! WORKING HERE !!! WORKING HERE !!!
+                 console.log('dateFilteredResults', dateFilteredResults, index.origin, index.destination);
+                 let countryCodeOrigins = [];
+                 let locationGroupArray = [].concat(...Object.values(locationGroup).map(group => group.map(country => country.abb.slice(-2))));
+                  // console.log('locationGroupArray', locationGroupArray);
+                 for (let i = 0; i < dateFilteredResults.length; i++) {
+                    let originCountry = dateFilteredResults[i].origin.slice(-2);
+
+                      if(dateFilteredResults[i].origin.slice(-2) === 'US' || dateFilteredResults[i].origin.slice(-2) === 'CA')  {
+                          // console.log('originCountry', originCountry, index.origin.slice(-2));
+                              if(originCountry === index.origin.slice(-2)) {
+                                // console.log('MATCH', originCountry, index.origin.slice(-2));
+                                countryCodeOrigins.push(dateFilteredResults[i]);  
+                              }
+
+                      } else  if(locationGroupArray.includes(index.origin.slice(-2))) {
+                        console.log('locationGroupArray', locationGroupArray, index.origin.slice(-2));
+                        if(originCountry === index.origin.slice(-2)) {
+                          // console.log('MATCH', originCountry, index.origin.slice(-2));
+                          countryCodeOrigins.push(dateFilteredResults[i]);  
+                        }
+                    }
+                 }
+                 console.log('countryCodeOrigins', countryCodeOrigins);
+
+  //WORKGIN HERE !!! WORKING HERE !!! WORKING HERE !!!  WORKING HERE !!! WORKING HERE !!! WORKING HERE !!! WORKING HERE !!!
+                      // ***** COUNTRY FILTER *****///
+
 
                        // ***** LOCATION CODE FILTER *****///
-
-
                 // Check if location group exists and filter results
-              
-                if (locationGroup.hasOwnProperty(index.origin)) {
-                  console.log('Location code detected in origin:', index.origin);
-                  originLocationGroup = true;
-                  let originLGresults
-                      if(index.origin === 'Z2' || index.origin === 'Z3'){
-                        console.log('Z2 detected in origin:', index.origin);
-                         originLGresults = dateFilteredResults.filter((result) => {
-                          return locationGroup[index.origin].some((location) => location.abb === result.origin.slice(-6));
-                        })  
-                      } else {
-                         originLGresults = dateFilteredResults.filter((result) => {
-                        return locationGroup[index.origin].some((location) => location.abb === result.origin.slice(-2));
-                  });
+              if (locationGroup.hasOwnProperty(index.origin)) {
+                originLocationGroup = true;
+                let originLGresults
+                    if(index.origin === 'Z2' || index.origin === 'Z3'){
+                        originLGresults = dateFilteredResults.filter((result) => {
+                        return locationGroup[index.origin].some((location) => location.abb === result.origin.slice(-6));
+                      })  
+                    } else {
+                        originLGresults = dateFilteredResults.filter((result) => {
+                      return locationGroup[index.origin].some((location) => location.abb === result.origin.slice(-2));
+                });
+              }
+
+                if (originLGresults.length === 0) {
                 }
 
-                  if (originLGresults.length === 0) {
-                    console.log('No matching results for origin location group:', index.origin);
-                  }
+                dateFilteredResults = originLGresults;
 
-                  dateFilteredResults = originLGresults;
-
-                } else if (index.origin !== undefined) {
-                  console.log('Invalid location group at origin:', index.origin);
-                }
-
-
-
+              } else if (index.origin !== undefined) {
+              }
                 // Repeat the same checks for destination
               if (locationGroup.hasOwnProperty(index.destination)) {
-                console.log('Location code detected in destination:', index.destination);
                 destinationLocationGroup = true;
                 let destinationLGresults; // Declare destinationLGresults here
 
                 if(index.destination === 'Z2' || index.destination === 'Z3'){
-                  console.log('Z2 detected in destination:', index.destination);
                   destinationLGresults = dateFilteredResults.filter((result) => {
-                    console.log('result.destination', result.destination.slice(-6));
                     return locationGroup[index.destination].some((location) => location.abb === result.destination.slice(-6));
                   })  
                 } else {
@@ -488,312 +584,62 @@ class CarrierSearchList extends Component {
                 }
 
                 if (destinationLGresults.length === 0) {
-                  console.log('No matching results for destination location group:', index.destination);
                 }
 
                 dateFilteredResults = destinationLGresults;
-              } else if (index.destination !== undefined) {
-                console.log('Invalid location group at destination:', index.destination);
+              } 
+                  else if (index.destination !== undefined) {
               }
-
-
-          if (originLocationGroup === true && destinationLocationGroup === true) {
-            console.log('Both origin and destination location groups selected');
-             
-            
-            if (index.origin === index.destination) {
-                console.log('intraZone', dateFilteredResults);
-                let intraZone = dateFilteredResults.filter((result) => {
-                  const originGroup = locationGroup[index.origin];
-                  const destinationGroup = locationGroup[index.destination];
-                  const sliceLength = index.origin === 'Z2' || index.origin === 'Z3' ? -6 : -2;
-
-
-                  return (
-                    originGroup.some((location) => location.abb === result.origin.slice(sliceLength)) &&
-                    destinationGroup.some((location) => location.abb === result.destination.slice(sliceLength))
-                  )
-                });
-
-                // console.log('intraZone', intraZone);
-                dateFilteredResults = intraZone;
-    
-              } else if (index.origin !== index.destination) { //INTERZONE searches are not allowed by the API, restricting for now
-                console.log('interZone, NOT ALLOWED BY API RESTRICT USE AFTER TESTING');
-                let interZone = dateFilteredResults.filter((result) => {
-                  const originGroup = locationGroup[index.origin];
-                  const destinationGroup = locationGroup[index.destination];
-                  const sliceLengthOrigin = index.origin === 'Z2' || index.origin === 'Z3' ? -6 : -2;
-                  const sliceLengthDestination = index.destination === 'Z2' || index.destination === 'Z3' ? -6 : -2;
-              
-                  
-
-                  return (
-                    originGroup.some((location) => location.abb === result.origin.slice(sliceLengthOrigin)) &&
-                    destinationGroup.some((location) => location.abb === result.destination.slice(sliceLengthDestination))
-                  )
-                });
-                // console.log('interZonee', interZone);
-                dateFilteredResults = interZone;
-
-              }
-
-          }
-
-
-          let locationGroupFilter = dateFilteredResults
-                       // ***** LOCATION CODE FILTER *****///
-          console.log('locationGroupFilter', locationGroupFilter);
-
-                      //*** DEAD HEAD FILTER***//
-                      
-
-//WORKGIN HERE !!! WORKING HERE !!! WORKING HERE !!!  WORKING HERE !!! WORKING HERE !!! WORKING HERE !!! WORKING HERE !!!
-//WORKGIN HERE !!! WORKING HERE !!! WORKING HERE !!!  WORKING HERE !!! WORKING HERE !!! WORKING HERE !!! WORKING HERE !!!
-
-                      //*** DEAD HEAD FILTER***//
-
-        // .then((response) => { //WORKING OUTDATED CODE
-        //   console.log('response', response.data);
-        //   // Format the date strings in the response data
-        //   let formattedResults = response.data.map((result) => ({
-        //     ...result,
-        //     date: formatDateString(result.date), // Replace 'date' with your actual date field
-        //   }));
-
-        //   console.log('formattedResults', formattedResults);
-        //   ///LOCATION CODE FILTER////
-
-
-        //   if (index.origin === 'Z0' || index.origin === 'Z1') {
-        //     // console.log('Location code detected in origin:', index.origin);
-        //     originLocationGroup = true;
-        //     const originLGresults = formattedResults.filter((result) => {
-        //       return locationGroup[index.origin].some((location) => location.abb === result.origin.slice(-2));
-        //     });
-      
-        //     // console.log('Filtered results for origin:', originLGresults,'ORIGIN LG SELECTED', originLocationGroup);
-        //     formattedResults = originLGresults;
-        //   }
-      
-        //   if (index.destination === 'Z0' || index.destination === 'Z1') {
-        //     // console.log('Location code detected in destination:', index.destination);
-        //     destinationLocationGroup = true;
-        //     const destinationLGresults = formattedResults.filter((result) => {
-        //       return locationGroup[index.destination].some((location) => location.abb === result.destination.slice(-2));
-        //     });
-      
-        //     // console.log('Filtered results for destination:', destinationLGresults, 'DESTINATION LG SELECTED', destinationLocationGroup);
-        //     formattedResults = destinationLGresults;
-        //   }
-
-        //   if (originLocationGroup === true && destinationLocationGroup === true) {
-        //     // console.log('Both origin and destination location groups selected');
-        //       if (index.origin === index.destination) {
-        //         // console.log('intraZone');
-        //         let intraZone = formattedResults.filter((result) => {
-        //           const originGroup = locationGroup[index.origin];
-        //           const destinationGroup = locationGroup[index.destination];
-
-        //           return (
-        //             originGroup.some((location) => location.abb === result.origin.slice(-2)) &&
-        //             destinationGroup.some((location) => location.abb === result.destination.slice(-2))
-        //           )
-        //         });
-
-
-
-        //         // console.log('intraZone', intraZone);
-        //         formattedResults = intraZone;
-    
-
-        //       } else if (index.origin !== index.destination) {
-        //         // console.log('interZone');
-        //         let interZone = formattedResults.filter((result) => {
-        //           const originGroup = locationGroup[index.origin];
-        //           const destinationGroup = locationGroup[index.destination];
-
-        //           return (
-        //             originGroup.some((location) => location.abb === result.origin.slice(-2)) &&
-        //             destinationGroup.some((location) => location.abb === result.destination.slice(-2))
-        //           )
-        //         });
-        //         // console.log('interZonee', interZone);
-        //         formattedResults = interZone;
-
-        //       }
-
-        //   }
-        //   ///LOCATION CODE FILTER////
-
-        //    ///DATE RANGE FILTER///
-
-        //   let filteredResults = formattedResults.filter((result) => {
-        //     if (dateRange) {
-        //       const [startDateString, endDateString] = dateRange.split(' - ');
-        //       console.log('startDateString', startDateString, 'endDateString', endDateString);
-        //       const startDate = Date.parse(startDateString);
-        //       const endDate = Date.parse(endDateString);
-        //       const resultDate = Date.parse(result.date); 
-        //       // const startDate = moment(startDateString, 'YYYY/MM/DD');
-        //       // const endDate = moment(endDateString, 'YYYY/MM/DD');
-        //       // const resultDate = moment(result.date, 'YYYY/MM/DD');
-          
-        //       // console.log('startDate', startDate, 'endDate', endDate, 'resultDate', resultDate);
+              if (originLocationGroup === true && destinationLocationGroup === true) {
                 
-        //       if (
-        //         resultDate >= startDate &&
-        //         resultDate <= endDate &&
-        //         result.age <= age 
-        //         // resultDate.isSameOrAfter(startDate) &&
-        //         // resultDate.isSameOrBefore(endDate) &&
-        //         // result.age <= age 
-                          
-        //       ) {                
-
-        //       return true;
-        //       }
-        //       return false;
-        //     }
-        //     return true; // Include all results if no date range is provided
-    
-        //   });
-        //   // let filteredResults = formattedResults.filter((result) => {
-        //   //   if (dateRange) {
-        //   //     const [startDateString, endDateString] = dateRange.split(' - ');
-        //   //     const startDate = moment(startDateString, 'YYYY/MM/DD');
-        //   //     const endDate = moment(endDateString, 'YYYY/MM/DD');
-        //   //     const resultDate = moment(result.date, 'YYYY/MM/DD');
                 
-        //   //     console.log('startDate', startDate);
-        //   //     console.log('endDate', endDate);
-        //   //     console.log('resultDate', resultDate);
-        //   //     console.log('result.age', result.age);
-          
-        //   //     if (
-        //   //       resultDate.isSameOrAfter(startDate) &&
-        //   //       resultDate.isSameOrBefore(endDate) &&
-        //   //       result.age <= age 
-        //   //     ) {                
-        //   //       return true;
-        //   //     }
-        //   //     return false;
-        //   //   }
-        //   //   return true; // Include all results if no date range is provided
-        //   // });
-        //   // let filteredResults = formattedResults.filter((result) => {
-        //   //     if(dateRange){
-        //   //       const [startDateString, endDateString] = dateRange.split(' - ');
-        //   //       const resultDate = result.date;
-        //   //       console.log('startDateString', startDateString, 'endDateString', endDateString, 'resultDate', resultDate);
-        //   //           if (resultDate >= startDateString && resultDate <= endDateString && result.age <= age) {
-        //   //             return true
-        //   //           }
-                
-        //   //       return true
-        //   //     }
+                if (index.origin === index.destination) {
+                    console.log('intraZone', dateFilteredResults);
+                    let intraZone = dateFilteredResults.filter((result) => {
+                      const originGroup = locationGroup[index.origin];
+                      const destinationGroup = locationGroup[index.destination];
+                      const sliceLength = index.origin === 'Z2' || index.origin === 'Z3' ? -6 : -2;
 
 
-        //   // });
-        //   console.log('filteredResults', filteredResults);
-        //   ///DATE RANGE FILTER///
+                      return (
+                        originGroup.some((location) => location.abb === result.origin.slice(sliceLength)) &&
+                        destinationGroup.some((location) => location.abb === result.destination.slice(sliceLength))
+                      )
+                    });
 
-        //     //DEAD HEAD FILTER//
-        //                       //API CALL TO GOOGLE MAPS DISTANCE MATRIX API
-               
-        //               const dhsFetch = async () => {
-        //                 try {
-        //                   const fetchDistance = async (origin, destination) => {
-        //                     try {
-        //                       const response = await axios.get(`http://localhost:3002/distanceMeter?origin=${origin}&destination=${destination}`);
-                              
-        //                       if (response.data && response.data.response && response.data.response.distance) {
-        //                         return parseInt(response.data.response.distance.text.replace(/,/g, ''));
-        //                       } else {
-        //                         // console.error('Invalid response format:', response.data);
-        //                         return null; // Handle the error accordingly
-        //                       }
-        //                     } catch (error) {
-        //                       // console.error('Error fetching distance data:', error);
-        //                       return null; // Handle the error accordingly
-        //                     }
-        //                   };
-                          
-
-        //                   // GENERAELIZE THE FETCH FUNCTIONS
-        //                   const fetchDistanceInfo = async (property, location) => {
-        //                     let promiseArray = [];
-                            
-        //                     for (let i = 0; i < filteredResults.length; i++) {
-        //                       // console.log(`${property}DH`, filteredResults[i][`${property}DH`]);
-                              
-        //                       // Push each axios promise to the array
-        //                       promiseArray.push(
-        //                         fetchDistance(index[property], filteredResults[i][location])
-        //                           .then((distance) => {
-        //                             // Update filteredResults[i] with distance information
-        //                             filteredResults[i][`${property}DH`] = distance;
-        //                           })
-        //                       );
-        //                     }
-                            
-                            
-        //                     // Use Promise.all to wait for all promises to resolve
-        //                     await Promise.all(promiseArray);
-                            
-        //                     // console.log(`Updated ${property}DH in filteredResults`, filteredResults);
-        //                     return filteredResults;
-        //                   };
-
-        //                   await Promise.all([
-        //                     fetchDistanceInfo('origin', 'origin', formattedResults),
-        //                     fetchDistanceInfo('destination', 'destination', formattedResults),
-        //                   ]);
-
-        //                   for (let i = 0; i < filteredResults.length; i++) {
-        //                     const origin = filteredResults[i].origin;
-        //                     const destination = filteredResults[i].destination;
-        //                     const distanceToDestination = await fetchDistance(origin, destination);
-        //                     filteredResults[i].distance = distanceToDestination;
-        //                   }
-
-        //                   // console.log('Updated DH in filteredResults', filteredResults);
-
-        //                   const filteredDHResults = filteredResults.filter((result) => {
-        //                     // console.log('result', result);
-        //                     return result.originDH < index.originDH && result.destinationDH < index.destinationDH;
-        //                   });
-
-
-        //                   // const filteredDHResults = filteredResults.filter((result) => {
-        //                   //   // Check if both originDH and destinationDH are defined and not null
-        //                   //   if (result.originDH !== null && result.destinationDH !== null) {
-        //                   //     return result.originDH < index.originDH && result.destinationDH < index.destinationDH;
-        //                   //   }
-        //                   //   // If either originDH or destinationDH is missing, exclude the result
-        //                   //   return false;
-        //                   // });
-                                                    
-                      
-        //                   // Update the state with the filtered results
-        //                   this.setState({
-        //                     results: filteredDHResults,
-        //                     isLoading: false, // Set loading to false after the API call is complete
-
-        //                   });
-                      
-        //                 } catch (error) {
-        //                   console.error(error);
-        //                   this.setState({ isLoading: false }); // Set loading to false in case of an error
-
-        //                 }
-        //               };
-                      
-        //               // Call the function
-        //               dhsFetch();
+                    dateFilteredResults = intraZone;
         
-        // })
+                  } else if (index.origin !== index.destination) { //INTERZONE searches are not allowed by the API, restricting for now
+                    let interZone = dateFilteredResults.filter((result) => {
+                      const originGroup = locationGroup[index.origin];
+                      const destinationGroup = locationGroup[index.destination];
+                      const sliceLengthOrigin = index.origin === 'Z2' || index.origin === 'Z3' ? -6 : -2;
+                      const sliceLengthDestination = index.destination === 'Z2' || index.destination === 'Z3' ? -6 : -2;
+                
+                      return (
+                        originGroup.some((location) => location.abb === result.origin.slice(sliceLengthOrigin)) &&
+                        destinationGroup.some((location) => location.abb === result.destination.slice(sliceLengthDestination))
+                      )
+                    });
+                    dateFilteredResults = interZone;
 
+                  }
+
+              }
+              let locationGroupFilter = dateFilteredResults
+              console.log('locationGroupFilter', locationGroupFilter);
+                       // ***** LOCATION CODE FILTER *****///
+
+
+
+                      //*** DEAD HEAD FILTER***//
+        //MAIN FUNCTION DONE ALREADY WORKING AND TESTING WITH MAPBOX... SCROLL UP TO SEE IT                      
+
+//WORKGIN HERE !!! WORKING HERE !!! WORKING HERE !!!  WORKING HERE !!! WORKING HERE !!! WORKING HERE !!! WORKING HERE !!!
+//WORKGIN HERE !!! WORKING HERE !!! WORKING HERE !!!  WORKING HERE !!! WORKING HERE !!! WORKING HERE !!! WORKING HERE !!!
+                    //*** DEAD HEAD FILTER***//
+
+          // tripCalculator( index.origin , locationGroupFilter);
 
 
         })
